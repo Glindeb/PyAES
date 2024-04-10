@@ -5,6 +5,8 @@ security is guaranteed for data encrypted or decrypted using this tool."""
 
 # Imports
 import numpy as np
+from numpy.typing import NDArray
+from secrets import token_bytes
 from os.path import getsize
 from os import remove
 
@@ -15,7 +17,7 @@ class AES:
     """
 
     # Substitution box
-    sub_table: bytes = bytes((
+    sub_box: tuple[int, ...] = (
         0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
         0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
         0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,
@@ -32,10 +34,10 @@ class AES:
         0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e, 0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e,
         0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
         0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
-    ))
+    )
 
     # Inverse substitution box
-    inv_sub_table: bytes = bytes((
+    inv_sub_box: tuple[int, ...] = (
         0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
         0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb,
         0x54, 0x7b, 0x94, 0x32, 0xa6, 0xc2, 0x23, 0x3d, 0xee, 0x4c, 0x95, 0x0b, 0x42, 0xfa, 0xc3, 0x4e,
@@ -52,7 +54,7 @@ class AES:
         0x60, 0x51, 0x7f, 0xa9, 0x19, 0xb5, 0x4a, 0x0d, 0x2d, 0xe5, 0x7a, 0x9f, 0x93, 0xc9, 0x9c, 0xef,
         0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61,
         0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
-    ))
+    )
 
     # Round constants
     r_const: tuple[int, ...] = (
@@ -63,8 +65,22 @@ class AES:
         0xD8000000, 0xAB000000, 0x4D000000,
     )
 
-    def __init__(self):
-        pass
+    def __init__(self, r_mode: str, version: int, *, key: bytes = b'') -> None:
+        """
+        Initialization of AES object.
+        :param r_mode: Specify running mode. (ECB, CBC, OFB, PCBC...)
+        :param version: Specify AES encryption version. (128, 256, 512)
+        :param key: Key used for encryption. If not specified generates random key.
+        :return: None
+        """
+        if key:
+            self.key: bytes = key
+        else:
+            self.key = self.key_gen(version // 8)
+
+        self.r_mode = r_mode
+
+        raise NotImplementedError
 
     def enc(self) -> bytes:
         raise NotImplementedError
@@ -78,24 +94,32 @@ class AES:
     def dec_file(self) -> None:
         raise NotImplementedError
 
-    def key_gen(self):
-        raise NotImplementedError
+    @staticmethod
+    def key_gen(length: int = 16) -> bytes:
+        """ Generates a random byte sequence of specified length using secrets library.
+        :param length: Length of byte sequence (number of bytes).
+        :returns: Byte sequence.
+        """
+        return token_bytes(length)
 
-    def key_expand(self, key):
+    def key_expand(self, key: bytes = b'') -> NDArray[np.int8]:
+        if not key:
+            key = self.key
+
         # Format key correctly for the key expansion
-        key = [key[i:i + 2] for i in range(0, len(key), 2)]
+        key_array: NDArray[np.int8] = np.frombuffer(key, dtype=np.uint8)
 
         # Key expansion setup
         # This part determines the number of rounds and the number of words
         # using the key length.
         if len(key) == 16:
-            words = key_schedule(key, 4, 11)
+            words = self.__key_schedule(key, 4, 11)
             nr = 11
         if len(key) == 24:
-            words = key_schedule(key, 6, 13)
+            words = self.__key_schedule(key, 6, 13)
             nr = 13
         if len(key) == 32:
-            words = key_schedule(key, 8, 15)
+            words = self.__key_schedule(key, 8, 15)
             nr = 15
 
         # Create list for storing the round keys & tmp list for storing
@@ -115,11 +139,12 @@ class AES:
             round_keys[i] = np.array(words[i * 4] + words[i * 4 + 1] + words[i * 4 + 2] + words[i * 4 + 3]).reshape(4, 4)
 
         # Returns the list of round keys and the number of rounds
-        return round_keys, nr
+        return round_keys
 
     # Key schedule (nk = number of colums, nr = number of rounds)
     # This function is used to expand the key to the correct number of round
-    def key_schedule(key, nk, nr):
+    @staticmethod
+    def __key_schedule(key, nk, nr):
         # Create list for storing the words and populates the first
         # 4 with the specified key.
         words = [(key[4 * i], key[4 * i + 1], key[4 * i + 2], key[4 * i + 3]) for i in range(nk)]
@@ -151,7 +176,7 @@ class AES:
         return words
 
     # Takes two hex values and calculates hex1 xor hex2
-    def hexor(hex1, hex2):
+    def __hexor(hex1, hex2):
         # Convert to binary
         bin1 = hex2binary(hex1)
         bin2 = hex2binary(hex2)
@@ -170,16 +195,16 @@ class AES:
         return hexed
 
     # Takes a hex value and returns binary
-    def hex2binary(hex):
+    def __hex2binary(hex):
         return bin(int(str(hex), 16))
 
     # Takes from 1 to the end, adds on from the start to 1
-    def RotWord(word):
+    def __RotWord(word):
         return word[1:] + word[:1]
 
     # Selects correct values from sbox based on the current word
     # and replaces the word with the new values.
-    def SubWord(word):
+    def __SubWord(word):
         # Create list for storing the new word
         sWord = []
 
@@ -217,12 +242,12 @@ class AES:
 
     # Xtime
     # Used to preform multiplication by x in the Galois field
-    def xtime(a):
+    def __xtime(a):
         return (((a << 1) ^ 0x1B) & 0xFF) if (a & 0x80) else (a << 1)
 
     # Byte substitution function
     # Substitutes each byte in the state with a byte from the S-Box
-    def sub_bytes(data, bytes_table):
+    def __sub_bytes(data, bytes_table):
         for i, row in enumerate(data):
             for j, byte in enumerate(row):
                 data[i][j] = bytes_table[byte]
@@ -231,7 +256,7 @@ class AES:
     # Shift rows function
     # Shifts the rows of the matrix to the left.
     # Each row is shifted by the number of its index
-    def shift_rows(array):
+    def __shift_rows(array):
         array[:, 1] = np.roll(array[:, 1], -1, axis=0)
         array[:, 2] = np.roll(array[:, 2], -2, axis=0)
         array[:, 3] = np.roll(array[:, 3], -3, axis=0)
@@ -240,14 +265,14 @@ class AES:
     # Inverse shift rows function
     # Shifts the rows of the matrix to the right.
     # Each row is shifted by the number of its index
-    def inv_shift_rows(array):
+    def __inv_shift_rows(array):
         array[:, 1] = np.roll(array[:, 1], 1, axis=0)
         array[:, 2] = np.roll(array[:, 2], 2, axis=0)
         array[:, 3] = np.roll(array[:, 3], 3, axis=0)
         return array
 
     # Performs the mix columns layer
-    def mix_columns(data):
+    def __mix_columns(data):
         # mixes a single column
         def mix_single_column(data):
             t = data[0] ^ data[1] ^ data[2] ^ data[3]
@@ -269,7 +294,7 @@ class AES:
     # Preforms the inverse mix columns layer
     # This function is similar to the mix_columns function
     # but instead preforms the inverse operation.
-    def inv_mix_columns(data):
+    def __inv_mix_columns(data):
         for i in range(4):
             u = xtime(xtime(data[i][0] ^ data[i][2]))
             v = xtime(xtime(data[i][1] ^ data[i][3]))
@@ -281,14 +306,14 @@ class AES:
         return data
 
     # Adds a padding to ensure a bloke size of 16 bytes
-    def add_padding(data):
+    def __add_padding(data):
         length = 16 - len(data)
         for i in range(length):
             data.append(0)
         return data, length
 
     # Removes the padding from the data
-    def remove_padding(data, identifier):
+    def __remove_padding(data, identifier):
         if identifier[-1] == 0:
             return data
         elif identifier[-1] > 0 and identifier[-1] < 16:

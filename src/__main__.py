@@ -1,7 +1,8 @@
 from AES_old-Python.encrypt import encrypt
 from AES_old-Python.decrypt import decrypt
 from getpass import getpass
-import AES_old-Python
+
+-Python
 
 
 def main():
