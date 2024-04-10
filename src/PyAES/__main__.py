@@ -6,7 +6,8 @@ import PyAES
 
 def main():
     print("-"*85)
-    print(r"""      _       ________   ______         _______          _   __
+    print(r"""
+      _       ________   ______         _______          _   __
      / \     |_   __  |.' ____ \       |_   __ \        / |_[  |
     / _ \      | |_ \_|| (___ \_| ______ | |__) |_   __`| |-'| |--.   .--.   _ .--.
    / ___ \     |  _| _  _.____`.||______||  ___/[ \ [  ]| |  | .-. |/ .'`\ \[ `.-. |
@@ -16,7 +17,7 @@ def main():
     print("-"*85)
     print(f"Version: {PyAES.__version__}                                      {PyAES.__copyright__}")
     print("-"*85)
-    print("""This is a simple AES (Advanced Encryption Standard) implementation in Python-3. It is
+    print("""This is a simple AES (Advanced Encryption Standard) implementation in Python-3.12. It is
 a pure Python implementation of AES that is designed to be used as a educational tool
 only. It is not intended to be used in any other use case than educational and no
 security is guaranteed for data encrypted or decrypted using this tool.""")

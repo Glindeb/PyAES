@@ -1,5 +1,0 @@
-To use footnotes do \footcite{...}
-
-To do acronym references do \acrlong{...} or \acrshort{...} m.m.
-
-To use glossarie do \gls{...} or \glslong{...} or \glsshort{...} m.m.
