@@ -12,7 +12,7 @@ with the project. The project is not intended to be used for any type of securit
 # ---------------
 # Program information m.m
 # ---------------
-__name__ = 'PyAES'
+__name__ = 'AES-Python'
 __author__ = 'Gabriel Lindeblad'
 __copyright__ = 'Copyright 2024, Gabriel Lindeblad'
 __credits__ = ['']

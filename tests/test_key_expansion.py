@@ -1,4 +1,4 @@
-import PyAES.AES as AES
+import AES-Python.AES as AES
 import numpy as np
 
 def test_aes_key_expantion_128bit():

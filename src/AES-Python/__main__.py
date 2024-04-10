@@ -1,7 +1,7 @@
-from PyAES.encrypt import encrypt
-from PyAES.decrypt import decrypt
+from AES_old-Python.encrypt import encrypt
+from AES_old-Python.decrypt import decrypt
 from getpass import getpass
-import PyAES
+import AES_old-Python
 
 
 def main():
@@ -15,7 +15,7 @@ def main():
 |____| |____||________| \______.'      |_____| [\_:  /  \__/[___]|__]'.__.' [___||__]
                                                \__.'                                 """)
     print("-"*85)
-    print(f"Version: {PyAES.__version__}                                      {PyAES.__copyright__}")
+    print(f"Version: {AES-Python.__version__}                                      {AES-Python.__copyright__}")
     print("-"*85)
     print("""This is a simple AES (Advanced Encryption Standard) implementation in Python-3.12. It is
 a pure Python implementation of AES that is designed to be used as a educational tool

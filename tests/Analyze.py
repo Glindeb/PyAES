@@ -2,7 +2,7 @@
 #                   Background structure
 # ---------------------------------------------------------------
 
-# Imports the encrypt function from the PyAES module
+# Imports the encrypt function from the AES-Python module
 from PyAES.encrypt import encrypt
 # Imports the timer and random number generator
 from time import perf_counter
