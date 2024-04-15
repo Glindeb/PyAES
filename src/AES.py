@@ -17,7 +17,7 @@ class AES:
     """
 
     # Substitution box
-    sub_box: tuple[int, ...] = (
+    SUB_BOX: NDArray[np.int8] = np.array([
         0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
         0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
         0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,
@@ -34,7 +34,7 @@ class AES:
         0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e, 0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e,
         0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
         0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
-    )
+    ])
 
     # Inverse substitution box
     inv_sub_box: tuple[int, ...] = (
@@ -78,7 +78,7 @@ class AES:
         else:
             self.key = self.key_gen(version // 8)
 
-        self.r_mode = r_mode
+        self.r_mode: str = r_mode
 
         raise NotImplementedError
 
@@ -102,109 +102,56 @@ class AES:
         """
         return token_bytes(length)
 
-    def key_expand(self, key: bytes = b'') -> NDArray[np.int8]:
-        if not key:
+    def key_expand(self, key: bytes = b'') -> tuple[NDArray[np.int8], ...]:
+        """
+        Expands the given key to 11, 13 or 15 round key depending on key length.
+        :param key: Key that is expanded.
+        :return: Tuple containing round key matrices.
+        """
+        if not key:  # man not need this, depending on later implementations of other functions
             key = self.key
 
         # Format key correctly for the key expansion
-        key_array: NDArray[np.int8] = np.frombuffer(key, dtype=np.uint8)
+        key_array: NDArray[np.int8] = np.frombuffer(key, dtype=np.int8)
 
-        # Key expansion setup
-        # This part determines the number of rounds and the number of words
-        # using the key length.
-        if len(key) == 16:
-            words = self.__key_schedule(key, 4, 11)
-            nr = 11
-        if len(key) == 24:
-            words = self.__key_schedule(key, 6, 13)
+        # Key expansion setup:
+        # Determines the number of rounds and the number of words using the key length.
+        if len(key_array) == 16:
+            nr: int = 11
+            round_keys: tuple[NDArray[np.int8], ...] = self.__key_schedule(key_array, nr)
+        elif len(key_array) == 24:
             nr = 13
-        if len(key) == 32:
-            words = self.__key_schedule(key, 8, 15)
+            round_keys = self.__key_schedule(key_array, nr)
+        elif len(key_array) == 32:
             nr = 15
+            round_keys = self.__key_schedule(key_array, nr)
+        else:
+            raise ValueError("Unsupported key length...")
 
-        # Create list for storing the round keys & tmp list for storing
-        # for temporary storage.
-        round_keys = [None for i in range(nr)]
-        tmp = [None for i in range(4)]
-
-        # Formats the words to a list of tuples
-        for i in range(nr * 4):
-            for index, t in enumerate(words[i]):
-                tmp[index] = int(t, 16)  # type: ignore
-            words[i] = tuple(tmp)
-
-        # Formats teh words to a list of numpy arrays where each
-        # array is a 4x4 matrix representing a round key.
-        for i in range(nr):
-            round_keys[i] = np.array(words[i * 4] + words[i * 4 + 1] + words[i * 4 + 2] + words[i * 4 + 3]).reshape(4, 4)
-
-        # Returns the list of round keys and the number of rounds
+        # Returns the list of round keys
         return round_keys
 
-    # Key schedule (nk = number of colums, nr = number of rounds)
+    # Key schedule (nc = number of colums, nr = number of rounds)
     # This function is used to expand the key to the correct number of round
-    @staticmethod
-    def __key_schedule(key, nk, nr):
-        # Create list for storing the words and populates the first
-        # 4 with the specified key.
-        words = [(key[4 * i], key[4 * i + 1], key[4 * i + 2], key[4 * i + 3]) for i in range(nk)]
+    def __key_schedule(self, key: NDArray[np.int8], nr: int) -> tuple[NDArray[np.int8], ...]:
+        # Setup list of matrices to store the words
+        words: list[NDArray[np.int8]] = [np.full((4, 4), 0, dtype=int) for i in range(nr)]
 
-        # Fill out the rest based on previews four words using the fucnitons, rotword,
-        # subword and rcon values
-        limit = False
-        for i in range(nk, (nr * nk)):
-            # Get required previous keywords
-            temp, word = words[i - 1], words[i - nk]
+        words[0] = key.reshape(4, 4)  # Populating first 4 words with key
 
-            # If multiple of nk use rot, sub, rcon etc
-            if i % nk == 0:
-                x = SubWord(RotWord(temp))
-                rcon = round_constant[int(i / nk)]
-                temp = hexor(x, hex(rcon)[2:])
-                limit = False
-            elif i % 4 == 0:
-                limit = True
+        # Generates the rest of the words
+        for i in range(nr - 1):
+            # Takes final word of previous iteration and runs through RotWord, SubWord and Rcon_xor operations
+            words[i][3] = np.roll(words[i][3], -1)  # RotWord
+            words[i][3] = [self.sub_box[word] for word in words[i][3]]    # SubWord
+            words[i][3] = wor
 
-            if i % 4 == 0 and limit and nk >= 8:
-                temp = SubWord(temp)
-
-            # Xor the two hex values
-            xord = hexor(''.join(word), ''.join(temp))
-            # Add to list
-            words.append((xord[:2], xord[2:4], xord[4:6], xord[6:8]))
         # Return the list of words
-        return words
-
-    # Takes two hex values and calculates hex1 xor hex2
-    def __hexor(hex1, hex2):
-        # Convert to binary
-        bin1 = hex2binary(hex1)
-        bin2 = hex2binary(hex2)
-
-        # Calculate
-        xord = int(bin1, 2) ^ int(bin2, 2)
-
-        # Cut prefix
-        hexed = hex(xord)[2:]
-
-        # Leading 0s get cut above, if not length 8 add a leading 0
-        if len(hexed) != 8:
-            hexed = '0' + hexed
-
-        # Return hex
-        return hexed
-
-    # Takes a hex value and returns binary
-    def __hex2binary(hex):
-        return bin(int(str(hex), 16))
-
-    # Takes from 1 to the end, adds on from the start to 1
-    def __RotWord(word):
-        return word[1:] + word[:1]
+        return tuple(words)
 
     # Selects correct values from sbox based on the current word
     # and replaces the word with the new values.
-    def __SubWord(word):
+    def __subword(word):
         # Create list for storing the new word
         sWord = []
 

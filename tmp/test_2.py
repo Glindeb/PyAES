@@ -1,4 +1,5 @@
 import numpy as np
+from secrets import token_bytes
 
 array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 array_2 = [0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76]
@@ -22,17 +23,21 @@ subBytesTable = (
     0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
     )
 
-def test_2(array):
-    return np.array(array).reshape(4, 4)
-
-def shift_row_array(array):
-    array[:, 1] = np.roll(array[:, 1], -1, axis=0)
-    array[:, 2] = np.roll(array[:, 2], -2, axis=0)
-    array[:, 3] = np.roll(array[:, 3], -3, axis=0)
-    return array
+key = b'00000000000000000000000000000000'
 
 
-if __name__ == '__main__':
-    print(array_2)
-    print(shift_row_array(test_2(array_2)))
-    print([[99, 107, 103, 118], [242, 1, 171, 123], [48, 215, 119, 197], [254, 124, 111, 43]])
+def key_gen(length: int = 16) -> bytes:
+    """ Generates a random byte sequence of specified length using secrets library.
+    :param length: Length of byte sequence (number of bytes).
+    :returns: Byte sequence.
+    """
+    return token_bytes(length)
+
+def key_to_array(key):
+    return np.frombuffer(key, dtype=np.int8)
+
+print(key)
+print(len(key))
+print(key_to_array(key))
+print(token_bytes(16))
+print(key_to_array((token_bytes(16))))

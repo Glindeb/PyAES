@@ -1,21 +1,6 @@
 import pytest
 import numpy as np
 
-
-def test_exist():
-    assert PyAES.__author__ is not None
-    assert PyAES.__copyright__ is not None
-    assert PyAES.__credits__  is not None
-    assert PyAES.__license__ is not None
-    assert PyAES.__version__ is not None
-    assert PyAES.__maintainer__ is not None
-    assert PyAES.__email__ is not None
-    assert PyAES.__status__ is not None
-    assert PyAES.__status__ is not None
-    assert PyAES.__date__ is not None
-    assert PyAES.__description__ is not None
-    assert PyAES.__platforms__ is not None
-
 def test_aes_actions_sub_bytes():
     assert AES.sub_bytes([[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15]], subBytesTable) == [[0x63, 0x7c, 0x77, 0x7b], [0xf2, 0x6b, 0x6f, 0xc5], [0x30, 0x01, 0x67, 0x2b], [0xfe, 0xd7, 0xab, 0x76]]
 
