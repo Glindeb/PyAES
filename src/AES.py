@@ -37,7 +37,7 @@ class AES:
     ])
 
     # Inverse substitution box
-    inv_sub_box: NDArray[np.int8] = np.array([
+    INV_SUB_BOX: NDArray[np.int8] = np.array([
         0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
         0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb,
         0x54, 0x7b, 0x94, 0x32, 0xa6, 0xc2, 0x23, 0x3d, 0xee, 0x4c, 0x95, 0x0b, 0x42, 0xfa, 0xc3, 0x4e,
@@ -105,12 +105,12 @@ class AES:
         raise NotImplementedError
 
     @staticmethod
-    def key_gen(length: int = 16) -> bytes:
+    def key_gen(length: int = 16) -> str:
         """ Generates a random byte sequence of specified length using secrets library.
         :param length: Length of byte sequence (number of bytes).
         :returns: Byte sequence.
         """
-        return token_bytes(length)
+        return token_bytes(length).hex()
 
     @classmethod
     def key_expand(cls, key: str = '') -> NDArray[np.int8]:
@@ -122,7 +122,6 @@ class AES:
 
         # Format key correctly for the key expansion
         key_array: NDArray[np.int8] = np.frombuffer(bytes.fromhex(key), dtype=np.uint8)
-        print(key_array)
 
         # Key expansion setup:
         # Determines the number of rounds and the number of words using the key length.
