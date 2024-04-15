@@ -57,15 +57,25 @@ class AES:
     )
 
     # Round constants
-    r_const: tuple[int, ...] = (
-        0x00000000, 0x01000000, 0x02000000,
-        0x04000000, 0x08000000, 0x10000000,
-        0x20000000, 0x40000000, 0x80000000,
-        0x1B000000, 0x36000000, 0x6C000000,
-        0xD8000000, 0xAB000000, 0x4D000000,
-    )
+    RCON: NDArray[np.int8] = np.array([[0x00, 0x00, 0x00, 0x00],
+                                       [0x01, 0x00, 0x00, 0x00],
+                                       [0x02, 0x00, 0x00, 0x00],
+                                       [0x04, 0x00, 0x00, 0x00],
+                                       [0x08, 0x00, 0x00, 0x00],
+                                       [0x10, 0x00, 0x00, 0x00],
+                                       [0x20, 0x00, 0x00, 0x00],
+                                       [0x40, 0x00, 0x00, 0x00],
+                                       [0x80, 0x00, 0x00, 0x00],
+                                       [0x1B, 0x00, 0x00, 0x00],
+                                       [0x36, 0x00, 0x00, 0x00],
+                                       [0x6c, 0x00, 0x00, 0x00],
+                                       [0xd8, 0x00, 0x00, 0x00],
+                                       [0xab, 0x00, 0x00, 0x00],
+                                       [0x4d, 0x00, 0x00, 0x00],
+                                       [0x9a, 0x00, 0x00, 0x00],
+                                       ], dtype=int)
 
-    def __init__(self, r_mode: str, version: int, *, key: bytes = b'') -> None:
+    def __init__(self, r_mode: str, version: int, *, key: str = "") -> None:
         """
         Initialization of AES object.
         :param r_mode: Specify running mode. (ECB, CBC, OFB, PCBC...)
@@ -74,9 +84,9 @@ class AES:
         :return: None
         """
         if key:
-            self.key: bytes = key
+            self.key: str = key
         else:
-            self.key = self.key_gen(version // 8)
+            self.key = str(self.key_gen(version // 8))
 
         self.r_mode: str = r_mode
 
@@ -102,90 +112,66 @@ class AES:
         """
         return token_bytes(length)
 
-    def key_expand(self, key: bytes = b'') -> tuple[NDArray[np.int8], ...]:
+    @classmethod
+    def key_expand(cls, key: str = '') -> NDArray[np.int8]:
         """
         Expands the given key to 11, 13 or 15 round key depending on key length.
         :param key: Key that is expanded.
         :return: Tuple containing round key matrices.
         """
-        if not key:  # man not need this, depending on later implementations of other functions
-            key = self.key
 
         # Format key correctly for the key expansion
-        key_array: NDArray[np.int8] = np.frombuffer(key, dtype=np.int8)
+        key_array: NDArray[np.int8] = np.frombuffer(bytes.fromhex(key), dtype=np.int8)
 
         # Key expansion setup:
         # Determines the number of rounds and the number of words using the key length.
         if len(key_array) == 16:
-            nr: int = 11
-            round_keys: tuple[NDArray[np.int8], ...] = self.__key_schedule(key_array, nr)
+            nr, nc = 11, 4
+            round_keys: NDArray[np.int8] = cls.__key_schedule(key_array, nr, nc)
         elif len(key_array) == 24:
-            nr = 13
-            round_keys = self.__key_schedule(key_array, nr)
+            nr, nc = 13, 6
+            round_keys = cls.__key_schedule(key_array, nr, nc)
         elif len(key_array) == 32:
-            nr = 15
-            round_keys = self.__key_schedule(key_array, nr)
+            nr, nc = 15, 8
+            round_keys = cls.__key_schedule(key_array, nr, nc)
         else:
             raise ValueError("Unsupported key length...")
 
         # Returns the list of round keys
         return round_keys
 
-    # Key schedule (nc = number of colums, nr = number of rounds)
-    # This function is used to expand the key to the correct number of round
-    def __key_schedule(self, key: NDArray[np.int8], nr: int) -> tuple[NDArray[np.int8], ...]:
+    @classmethod
+    def __key_schedule(cls, key: NDArray[np.int8], nr: int, nc: int) -> NDArray[np.int8]:
+        """
+        Key schedule (nc = number of columns, nr = number of rounds).
+        This function is used to expand the key to the correct number of round.
+        :param key: String bytes in hex format.
+        :param nr: Number of encryption rounds.
+        :param nc: Number of initial
+        :return:
+        """
         # Setup list of matrices to store the words
-        words: list[NDArray[np.int8]] = [np.full((4, 4), 0, dtype=int) for i in range(nr)]
+        words: NDArray[np.int8] = np.full((nr * 4, 4), 0, dtype=int)
 
-        words[0] = key.reshape(4, 4)  # Populating first 4 words with key
+        # Populating first words with key
+        words[0:nc] = np.array_split(key, nc)
 
         # Generates the rest of the words
-        for i in range(nr - 1):
-            # Takes final word of previous iteration and runs through RotWord, SubWord and Rcon_xor operations
-            words[i][3] = np.roll(words[i][3], -1)  # RotWord
-            words[i][3] = [self.sub_box[word] for word in words[i][3]]    # SubWord
-            words[i][3] = wor
+        for i in range(nc, (4 * nr)):
+            if i % nc == 0:
+                words[i] = words[i - 1]  # Moves working word to next word
+                words[i] = np.roll(words[i], -1)  # RotWord
+                words[i] = cls.SUB_BOX[words[i]]  # SubWord
+                words[i] = np.bitwise_xor(words[i], cls.RCON[i // nc])  # Round constant xor
+                words[i] = np.bitwise_xor(words[i], words[i - nc])  # Xor with i - nc word
+            elif (i % 4) == 0 and nc == 8:
+                words[i] = cls.SUB_BOX[words[i - 1]]  # SubWord using previous word
+                words[i] = np.bitwise_xor(words[i], words[i - nc])  # Xor with i - nc word
+            else:
+                words[i] = np.bitwise_xor(words[i - 1], words[i - nc])  # Xor previous word with i - nc word
 
         # Return the list of words
-        return tuple(words)
-
-    # Selects correct values from sbox based on the current word
-    # and replaces the word with the new values.
-    def __subword(word):
-        # Create list for storing the new word
-        sWord = []
-
-        # Loop through the current word
-        for i in range(4):
-
-            # Check first char, if its a letter(a-f) get corresponding decimal
-            # otherwise just take the value and add 1
-            if word[i][0].isdigit() is False:
-                row = ord(word[i][0]) - 86
-            else:
-                row = int(word[i][0]) + 1
-
-            # Repeat above for the seoncd char
-            if word[i][1].isdigit() is False:
-                col = ord(word[i][1]) - 86
-            else:
-                col = int(word[i][1]) + 1
-
-            # Get the index base on row and col (16x16 grid)
-            sBoxIndex = (row * 16) - (17 - col)
-
-            # Get the value from sbox and removes prefix (0x)
-            piece = hex(subBytesTable[sBoxIndex])[2:]
-
-            # Check length to ensure leading 0s are not forgotton
-            if len(piece) != 2:
-                piece = '0' + piece
-
-            # Adds the new value to the list
-            sWord.append(piece)
-
-        # Returning word as string
-        return ''.join(sWord)
+        return words.reshape(nr, 4, 4)
 
     # Xtime
     # Used to preform multiplication by x in the Galois field

@@ -1,10 +1,12 @@
-import sys
 import numpy as np
-sys.path.insert(1, '/Users/gabriel/Documents/GitHub/AES-Python/src')
-from AES import AES
+from numpy.typing import NDArray
+import sys
+sys.path.append('../')
+from src.AES import AES
+
 
 def test_aes_key_expansion_128bit():
-    round_keys = AES.key_expand("00000000000000000000000000000000")
+    round_keys: NDArray[np.int8] = AES.key_expand("00000000000000000000000000000000")
 
     assert np.array_equal(round_keys, np.array([
         [[0, 0, 0, 0],
@@ -55,7 +57,7 @@ def test_aes_key_expansion_128bit():
 
 
 def test_aes_key_expansion_192bit():
-    round_keys = AES.key_expand("000000000000000000000000000000000000000000000000")
+    round_keys: NDArray[np.int8] = AES.key_expand("000000000000000000000000000000000000000000000000")
 
     assert np.array_equal(round_keys, np.array([
         [[0, 0, 0, 0],
@@ -114,7 +116,7 @@ def test_aes_key_expansion_192bit():
 
 
 def test_aes_key_expansion_256bit():
-    round_keys = AES.key_expand("0000000000000000000000000000000000000000000000000000000000000000")
+    round_keys: NDArray[np.int8] = AES.key_expand("0000000000000000000000000000000000000000000000000000000000000000")
 
     assert np.array_equal(round_keys, np.array([
         [[0, 0, 0, 0],
