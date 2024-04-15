@@ -121,7 +121,8 @@ class AES:
         """
 
         # Format key correctly for the key expansion
-        key_array: NDArray[np.int8] = np.frombuffer(bytes.fromhex(key), dtype=np.int8)
+        key_array: NDArray[np.int8] = np.frombuffer(bytes.fromhex(key), dtype=np.uint8)
+        print(key_array)
 
         # Key expansion setup:
         # Determines the number of rounds and the number of words using the key length.
