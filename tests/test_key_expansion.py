@@ -3,6 +3,7 @@ import numpy as np
 from numpy.typing import NDArray
 import sys
 
+# Import AES class
 sys.path.append('../')
 from src.AES import AES
 
