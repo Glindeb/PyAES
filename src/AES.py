@@ -106,9 +106,9 @@ class AES:
 
     @staticmethod
     def key_gen(length: int = 16) -> str:
-        """ Generates a random byte sequence of specified length using secrets library.
+        """ Generates a random byte string of specified length using secrets library.
         :param length: Length of byte sequence (number of bytes).
-        :returns: Byte sequence.
+        :returns: Byte sequence string.
         """
         return token_bytes(length).hex()
 
