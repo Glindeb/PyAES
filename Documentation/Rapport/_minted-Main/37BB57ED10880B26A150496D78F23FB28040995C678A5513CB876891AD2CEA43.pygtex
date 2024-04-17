@@ -1,9 +1,0 @@
-\begin{Verbatim}[commandchars=\\\{\}]
-    \PYGZdl{} head \PYGZhy{}n \PYG{l+m}{4} pi.ppm \PYGZgt{} header.txt
-
-    \PYGZdl{} tail \PYGZhy{}n +5 pi.ppm \PYGZgt{} body.bin
-
-    \PYGZdl{} python3 encrypt.py 2b7e151628aed2a6abf7158809cf4f3c body.bin ECB
-
-    \PYGZdl{} cat header.txt body.bin.enc \PYGZgt{} pi\PYGZhy{}ecb.ppm
-\end{Verbatim}

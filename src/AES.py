@@ -5,6 +5,7 @@ security is guaranteed for data encrypted or decrypted using this tool."""
 
 # Imports
 import numpy as np
+import galois
 from numpy.typing import NDArray
 from secrets import token_bytes
 from os.path import getsize
@@ -75,13 +76,16 @@ class AES:
                                        [0x9a, 0x00, 0x00, 0x00],
                                        ])
 
-    def __init__(self, r_mode: str, version: int, *, key: str = "") -> None:
+    # Initializing GF(2^8) object for finite field multiplication
+    GF = galois.GF(2**8)
+
+    def __init__(self, *, r_mode: str = "ECB", version: int = 128, key: str = "") -> None:
         """
         Initialization of AES object.
         :param r_mode: Specify running mode. (ECB, CBC, OFB, PCBC...)
         :param version: Specify AES encryption version. (128, 256, 512)
         :param key: Key used for encryption. If not specified generates random key.
-        :return: None
+        :return: None.
         """
         if key:
             self.key: str = key
@@ -90,18 +94,16 @@ class AES:
 
         self.r_mode: str = r_mode
 
-        raise NotImplementedError
-
     def enc(self) -> bytes:
         raise NotImplementedError
 
     def dec(self) -> bytes:
         raise NotImplementedError
 
-    def enc_file(self) -> None:
+    def __enc_schedule(self, data: NDArray[np.int8], r_keys: NDArray[np.int8]) -> NDArray[np.int8]:
         raise NotImplementedError
 
-    def dec_file(self) -> None:
+    def __dec_schedule(self, data: NDArray[np.int8], r_keys: NDArray[np.int8]) -> NDArray[np.int8]:
         raise NotImplementedError
 
     @staticmethod
@@ -147,8 +149,8 @@ class AES:
         This function is used to expand the key to the correct number of round.
         :param key: String bytes in hex format.
         :param nr: Number of encryption rounds.
-        :param nc: Number of initial
-        :return:
+        :param nc: Number of initial.
+        :return: NDArray.
         """
         # Setup list of matrices to store the words
         words: NDArray[np.int8] = np.full((nr * 4, 4), 0, dtype=int)
@@ -173,70 +175,45 @@ class AES:
         # Return the list of words
         return words.reshape(nr, 4, 4)
 
-    # Xtime
-    # Used to preform multiplication by x in the Galois field
-    def __xtime(a):
-        return (((a << 1) ^ 0x1B) & 0xFF) if (a & 0x80) else (a << 1)
+    @staticmethod
+    def __shift_rows(matrix: NDArray[np.int8], shift: int) -> NDArray[np.int8]:
+        """
+        Shifts the rows of the matrix to the left. Each row is shifted by the number of its index.
+        :param matrix: NDArray to preform row shifting on.
+        :param shift: Integer of either -1 or 1 depending on direction of operation. (-1: Normal, 1: inverse)
+        :return: NDArray.
+        """
+        matrix[1, :] = np.roll(matrix[1, :], shift * 1)
+        matrix[2, :] = np.roll(matrix[2, :], shift * 2)
+        matrix[3, :] = np.roll(matrix[3, :], shift * 3)
+        return matrix
 
-    # Byte substitution function
-    # Substitutes each byte in the state with a byte from the S-Box
-    def __sub_bytes(data, bytes_table):
-        for i, row in enumerate(data):
-            for j, byte in enumerate(row):
-                data[i][j] = bytes_table[byte]
-        return data
+    @classmethod
+    def __mix_columns(cls, matrix: NDArray[np.int8], shift: int) -> NDArray[np.int8]:
+        """
+        Preforms the shift columns (or inverse shift columns) operation on the input matrix.
+        :param matrix: NDArray to preform shift columns on.
+        :param shift: Integer of either -1 or 1 depending on direction of operation. (-1: Normal, 1: inverse)
+        :return: NDArray.
+        """
+        cx: NDArray[np.int8] = np.array([[2, 3, 1, 1],      # Matrix used for shift columns operation
+                                         [1, 2, 3, 1],
+                                         [1, 1, 2, 3],
+                                         [3, 1, 1, 2]])
+        dx: NDArray[np.int8] = np.array([[14, 11, 13, 9],   # Matrix used for inverse shift columns operation
+                                         [9, 14, 11, 13],
+                                         [13, 9, 14, 11],
+                                         [11, 13, 9, 14]])
 
-    # Shift rows function
-    # Shifts the rows of the matrix to the left.
-    # Each row is shifted by the number of its index
-    def __shift_rows(array):
-        array[:, 1] = np.roll(array[:, 1], -1, axis=0)
-        array[:, 2] = np.roll(array[:, 2], -2, axis=0)
-        array[:, 3] = np.roll(array[:, 3], -3, axis=0)
-        return array
+        # Determines if preforming inverse operation or not
+        if shift < 0:
+            x = cls.GF(cx)
+        else:
+            x = cls.GF(dx)
 
-    # Inverse shift rows function
-    # Shifts the rows of the matrix to the right.
-    # Each row is shifted by the number of its index
-    def __inv_shift_rows(array):
-        array[:, 1] = np.roll(array[:, 1], 1, axis=0)
-        array[:, 2] = np.roll(array[:, 2], 2, axis=0)
-        array[:, 3] = np.roll(array[:, 3], 3, axis=0)
-        return array
-
-    # Performs the mix columns layer
-    def __mix_columns(data):
-        # mixes a single column
-        def mix_single_column(data):
-            t = data[0] ^ data[1] ^ data[2] ^ data[3]
-            u = data[0]
-            data[0] ^= t ^ xtime(data[0] ^ data[1])
-            data[1] ^= t ^ xtime(data[1] ^ data[2])
-            data[2] ^= t ^ xtime(data[2] ^ data[3])
-            data[3] ^= t ^ xtime(data[3] ^ u)
-
-        # mixes all columns using mix_single_column
-        def mix(data):
-            for i in range(4):
-                mix_single_column(data[i])
-            return data
-
-        data = mix(data)
-        return data
-
-    # Preforms the inverse mix columns layer
-    # This function is similar to the mix_columns function
-    # but instead preforms the inverse operation.
-    def __inv_mix_columns(data):
-        for i in range(4):
-            u = xtime(xtime(data[i][0] ^ data[i][2]))
-            v = xtime(xtime(data[i][1] ^ data[i][3]))
-            data[i][0] ^= u
-            data[i][1] ^= v
-            data[i][2] ^= u
-            data[i][3] ^= v
-        mix_columns(data)
-        return data
+        # Preforms matrix multiplication with each column separately
+        matrix = x @ cls.GF(matrix)
+        return matrix
 
     # Adds a padding to ensure a bloke size of 16 bytes
     def __add_padding(data):

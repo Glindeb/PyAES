@@ -1,19 +1,19 @@
 import numpy as np
 import sys
 from time import time
+from typing import Callable
 
-# Import AES class
 sys.path.append('../')
 from src.AES import AES
 
 
-def timeit(func):
-    def wrapper():
+def timeit(func: Callable[[], float]) -> Callable[[], None]:
+    def wrapper() -> None:
         t1: float = time()
         func()
-        t2: float = time() - t1
+        t2: float = (time() - t1) * 1000
         print(f'"{func.__name__}" ran in',
-              f' {t2:.6e} seconds.')
+              f' {t2:.6e} ms.')
     return wrapper
 
 
