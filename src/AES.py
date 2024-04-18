@@ -76,8 +76,8 @@ class AES:
                                        [0x9a, 0x00, 0x00, 0x00],
                                        ])
 
-    # Initializing GF(2^8) object for finite field multiplication
-    GF = galois.GF(2**8)
+    # Initializing AES GF(2^8) object for finite field multiplication
+    GF = galois.GF(2**8, irreducible_poly=0x11b)
 
     def __init__(self, *, r_mode: str = "ECB", version: int = 128, key: str = "") -> None:
         """
@@ -196,24 +196,31 @@ class AES:
         :param shift: Integer of either -1 or 1 depending on direction of operation. (-1: Normal, 1: inverse)
         :return: NDArray.
         """
-        cx: NDArray[np.int8] = np.array([[2, 3, 1, 1],      # Matrix used for shift columns operation
+        cx: NDArray[np.int8] = np.array([[2, 3, 1, 1],  # Matrix used for shift columns operation
                                          [1, 2, 3, 1],
                                          [1, 1, 2, 3],
                                          [3, 1, 1, 2]])
-        dx: NDArray[np.int8] = np.array([[14, 11, 13, 9],   # Matrix used for inverse shift columns operation
+        dx: NDArray[np.int8] = np.array([[14, 11, 13, 9],  # Matrix used for inverse shift columns operation
                                          [9, 14, 11, 13],
                                          [13, 9, 14, 11],
                                          [11, 13, 9, 14]])
 
         # Determines if preforming inverse operation or not
         if shift < 0:
-            x = cls.GF(cx)
+            table = cx
         else:
-            x = cls.GF(dx)
+            table = dx
 
-        # Preforms matrix multiplication with each column separately
-        matrix = x @ cls.GF(matrix)
-        return matrix
+        # Preforms Galois multiplication with each column separately
+        result = np.zeros_like(matrix)
+        for i in range(4):
+            for j in range(4):
+                temp = cls.GF(table[j, 0]) * cls.GF(matrix[0, i])
+                for k in range(1, 4):
+                    temp ^= cls.GF(table[j, k]) * cls.GF(matrix[k, i])  # type: ignore
+                result[j, i] = temp
+
+        return result
 
     # Adds a padding to ensure a bloke size of 16 bytes
     def __add_padding(data):
