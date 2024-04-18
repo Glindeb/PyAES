@@ -14,11 +14,25 @@ from os import remove
 
 class AES:
     """
-    AES class...
+    The AES class implements the Advanced Encryption Standard (AES) algorithm for symmetric key cryptography.
+    It supports different modes of operation (ECB, CBC) and key lengths (128, 256, 512 bits).
+
+    Attributes:
+        version (int): The version of the encryption, either 128, 192 or 256 bit.
+        r_mode (str): The running mode for AES. Default is "ECB".
+        key (str): The encryption key. If not provided, a random key is generated.
+
+    Methods:
+        set_key: Sets the encryption key.
+        get_key: Returns the current encryption key.
+        enc: Encrypts string of unspecified length.
+        dec: Decrypts string.
+        key_gen: Generates a random byte string of specified length (16, 24 or 32 bytes).
+        key_expand: Expands the given key to 11, 13 or 15 round keys depending on key length.
     """
 
     # Substitution box
-    SUB_BOX: NDArray[np.int8] = np.array([
+    SUB_BOX: NDArray[np.uint8] = np.array([
         0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
         0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
         0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,
@@ -38,7 +52,7 @@ class AES:
     ])
 
     # Inverse substitution box
-    INV_SUB_BOX: NDArray[np.int8] = np.array([
+    INV_SUB_BOX: NDArray[np.uint8] = np.array([
         0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
         0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb,
         0x54, 0x7b, 0x94, 0x32, 0xa6, 0xc2, 0x23, 0x3d, 0xee, 0x4c, 0x95, 0x0b, 0x42, 0xfa, 0xc3, 0x4e,
@@ -57,28 +71,6 @@ class AES:
         0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
     ])
 
-    # Round constants
-    RCON: NDArray[np.int8] = np.array([[0x00, 0x00, 0x00, 0x00],
-                                       [0x01, 0x00, 0x00, 0x00],
-                                       [0x02, 0x00, 0x00, 0x00],
-                                       [0x04, 0x00, 0x00, 0x00],
-                                       [0x08, 0x00, 0x00, 0x00],
-                                       [0x10, 0x00, 0x00, 0x00],
-                                       [0x20, 0x00, 0x00, 0x00],
-                                       [0x40, 0x00, 0x00, 0x00],
-                                       [0x80, 0x00, 0x00, 0x00],
-                                       [0x1B, 0x00, 0x00, 0x00],
-                                       [0x36, 0x00, 0x00, 0x00],
-                                       [0x6c, 0x00, 0x00, 0x00],
-                                       [0xd8, 0x00, 0x00, 0x00],
-                                       [0xab, 0x00, 0x00, 0x00],
-                                       [0x4d, 0x00, 0x00, 0x00],
-                                       [0x9a, 0x00, 0x00, 0x00],
-                                       ])
-
-    # Initializing AES GF(2^8) object for finite field multiplication
-    GF = galois.GF(2**8, irreducible_poly=0x11b)
-
     def __init__(self, *, r_mode: str = "ECB", version: int = 128, key: str = "") -> None:
         """
         Initialization of AES object.
@@ -94,17 +86,74 @@ class AES:
 
         self.r_mode: str = r_mode
 
+    def set_key(self, key) -> None:
+        if isinstance(key, str) and ((len(key) / 2) in [16, 24, 32]):
+            self.key = key
+        else:
+            raise TypeError("Unsupported key length, supported types are (16, 24, 32) bytes.")
+
+    def get_key(self) -> str:
+        return self.key
+
     def enc(self) -> bytes:
         raise NotImplementedError
 
     def dec(self) -> bytes:
         raise NotImplementedError
 
-    def __enc_schedule(self, data: NDArray[np.int8], r_keys: NDArray[np.int8]) -> NDArray[np.int8]:
-        raise NotImplementedError
+    @classmethod
+    def __enc_schedule(cls, data: NDArray[np.uint8], r_keys: NDArray[np.uint8]) -> NDArray[np.uint8]:
+        """
+        Preforms encryption rounds depending on number of round keys.
+        :param data: Matrix that is passed through each operation.
+        :param r_keys: Matrix containing round keys.
+        :return: Encrypted matrix.
+        """
+        nr: int = len(r_keys)
 
-    def __dec_schedule(self, data: NDArray[np.int8], r_keys: NDArray[np.int8]) -> NDArray[np.int8]:
-        raise NotImplementedError
+        # Initial add round key
+        data = np.bitwise_xor(data, r_keys[0])
+
+        # Rounds 1 to 9 or 1 to 11 or 1 to 13
+        for i in range(1, (nr - 1)):
+            data = cls.SUB_BOX[data]  # Sub bytes
+            data = cls.__shift_rows(data, -1)  # Shift rows
+            data = cls.__mix_columns(data, -1)  # Mix columns
+            data = np.bitwise_xor(data, r_keys[i])  # Add round key
+
+        # Final round, identical to the previous rounds but without mix columns step
+        data = cls.SUB_BOX[data]
+        data = cls.__shift_rows(data, -1)
+        data = np.bitwise_xor(data, r_keys[-1])
+
+        # Returns the encrypted data
+        return data
+
+    @classmethod
+    def __dec_schedule(cls, data: NDArray[np.uint8], r_keys: NDArray[np.uint8]) -> NDArray[np.uint8]:
+        """
+        Preforms decryption rounds depending on number of round keys.
+        :param data: Matrix that is passed through each operation.
+        :param r_keys: Matrix containing round keys.
+        :return: Decrypted matrix.
+        """
+        nr: int = len(r_keys)
+
+        # Initial operations (The reverse from final operations in enc_schedule)
+        data = np.bitwise_xor(data, r_keys[-1])
+        data = cls.__shift_rows(data, 1)
+        data = cls.INV_SUB_BOX[data]
+
+        for i in range(2, nr):
+            data = np.bitwise_xor(data, r_keys[-i])     # Inverse add round key
+            data = cls.__mix_columns(data, 1)      # Inverse mix columns
+            data = cls.__shift_rows(data, 1)       # Inverse shift rows
+            data = cls.INV_SUB_BOX[data]                # Inverse sub bytes
+
+        # Final round (Identical to first operation in enc_schedule)
+        data = np.bitwise_xor(data, r_keys[0])
+
+        return data
 
     @staticmethod
     def key_gen(length: int = 16) -> str:
@@ -115,7 +164,7 @@ class AES:
         return token_bytes(length).hex()
 
     @classmethod
-    def key_expand(cls, key: str = '') -> NDArray[np.int8]:
+    def key_expand(cls, key: str = '') -> NDArray[np.uint8]:
         """
         Expands the given key to 11, 13 or 15 round key depending on key length.
         :param key: Key that is expanded.
@@ -123,13 +172,13 @@ class AES:
         """
 
         # Format key correctly for the key expansion
-        key_array: NDArray[np.int8] = np.frombuffer(bytes.fromhex(key), dtype=np.uint8)
+        key_array: NDArray[np.uint8] = np.frombuffer(bytes.fromhex(key), dtype=np.uint8)
 
         # Key expansion setup:
         # Determines the number of rounds and the number of words using the key length.
         if len(key_array) == 16:
             nr, nc = 11, 4
-            round_keys: NDArray[np.int8] = cls.__key_schedule(key_array, nr, nc)
+            round_keys: NDArray[np.uint8] = cls.__key_schedule(key_array, nr, nc)
         elif len(key_array) == 24:
             nr, nc = 13, 6
             round_keys = cls.__key_schedule(key_array, nr, nc)
@@ -143,7 +192,7 @@ class AES:
         return round_keys
 
     @classmethod
-    def __key_schedule(cls, key: NDArray[np.int8], nr: int, nc: int) -> NDArray[np.int8]:
+    def __key_schedule(cls, key: NDArray[np.uint8], nr: int, nc: int) -> NDArray[np.uint8]:
         """
         Key schedule (nc = number of columns, nr = number of rounds).
         This function is used to expand the key to the correct number of round.
@@ -152,8 +201,27 @@ class AES:
         :param nc: Number of initial.
         :return: NDArray.
         """
+        # Round constants
+        rcon: NDArray[np.uint8] = np.array([[0x00, 0x00, 0x00, 0x00],
+                                            [0x01, 0x00, 0x00, 0x00],
+                                            [0x02, 0x00, 0x00, 0x00],
+                                            [0x04, 0x00, 0x00, 0x00],
+                                            [0x08, 0x00, 0x00, 0x00],
+                                            [0x10, 0x00, 0x00, 0x00],
+                                            [0x20, 0x00, 0x00, 0x00],
+                                            [0x40, 0x00, 0x00, 0x00],
+                                            [0x80, 0x00, 0x00, 0x00],
+                                            [0x1B, 0x00, 0x00, 0x00],
+                                            [0x36, 0x00, 0x00, 0x00],
+                                            [0x6c, 0x00, 0x00, 0x00],
+                                            [0xd8, 0x00, 0x00, 0x00],
+                                            [0xab, 0x00, 0x00, 0x00],
+                                            [0x4d, 0x00, 0x00, 0x00],
+                                            [0x9a, 0x00, 0x00, 0x00],
+                                            ])
+
         # Setup list of matrices to store the words
-        words: NDArray[np.int8] = np.full((nr * 4, 4), 0, dtype=int)
+        words: NDArray[np.uint8] = np.full((nr * 4, 4), 0, dtype=int)
 
         # Populating first words with key
         words[0:nc] = np.array_split(key, nc)
@@ -164,7 +232,7 @@ class AES:
                 words[i] = words[i - 1]  # Moves working word to next word
                 words[i] = np.roll(words[i], -1)  # RotWord
                 words[i] = cls.SUB_BOX[words[i]]  # SubWord
-                words[i] = np.bitwise_xor(words[i], cls.RCON[i // nc])  # Round constant xor
+                words[i] = np.bitwise_xor(words[i], rcon[i // nc])  # Round constant xor
                 words[i] = np.bitwise_xor(words[i], words[i - nc])  # Xor with i - nc word
             elif (i % 4) == 0 and nc == 8:
                 words[i] = cls.SUB_BOX[words[i - 1]]  # SubWord using previous word
@@ -176,31 +244,37 @@ class AES:
         return words.reshape(nr, 4, 4)
 
     @staticmethod
-    def __shift_rows(matrix: NDArray[np.int8], shift: int) -> NDArray[np.int8]:
+    def __shift_rows(matrix: NDArray[np.uint8], shift: int) -> NDArray[np.uint8]:
         """
         Shifts the rows of the matrix to the left. Each row is shifted by the number of its index.
         :param matrix: NDArray to preform row shifting on.
         :param shift: Integer of either -1 or 1 depending on direction of operation. (-1: Normal, 1: inverse)
         :return: NDArray.
         """
+        matrix = matrix.transpose()  # Fix due to this implementations use rows and columns
         matrix[1, :] = np.roll(matrix[1, :], shift * 1)
         matrix[2, :] = np.roll(matrix[2, :], shift * 2)
         matrix[3, :] = np.roll(matrix[3, :], shift * 3)
-        return matrix
+        return matrix.transpose()
 
-    @classmethod
-    def __mix_columns(cls, matrix: NDArray[np.int8], shift: int) -> NDArray[np.int8]:
+    @staticmethod
+    def __mix_columns(matrix: NDArray[np.uint8], shift: int) -> NDArray[np.uint8]:
         """
         Preforms the shift columns (or inverse shift columns) operation on the input matrix.
         :param matrix: NDArray to preform shift columns on.
         :param shift: Integer of either -1 or 1 depending on direction of operation. (-1: Normal, 1: inverse)
         :return: NDArray.
         """
-        cx: NDArray[np.int8] = np.array([[2, 3, 1, 1],  # Matrix used for shift columns operation
+        matrix = matrix.transpose()  # Fix for this implementations way of handling columns and rows
+
+        # Initializing AES GF(2^8) object for finite field multiplication
+        gf = galois.GF(2 ** 8, irreducible_poly=0x11b)
+
+        cx: NDArray[np.uint8] = np.array([[2, 3, 1, 1],  # Matrix used for shift columns operation
                                          [1, 2, 3, 1],
                                          [1, 1, 2, 3],
                                          [3, 1, 1, 2]])
-        dx: NDArray[np.int8] = np.array([[14, 11, 13, 9],  # Matrix used for inverse shift columns operation
+        dx: NDArray[np.uint8] = np.array([[14, 11, 13, 9],  # Matrix used for inverse shift columns operation
                                          [9, 14, 11, 13],
                                          [13, 9, 14, 11],
                                          [11, 13, 9, 14]])
@@ -215,12 +289,12 @@ class AES:
         result = np.zeros_like(matrix)
         for i in range(4):
             for j in range(4):
-                temp = cls.GF(table[j, 0]) * cls.GF(matrix[0, i])
+                temp: NDArray[np.uint8] = gf(table[j, 0]) * gf(matrix[0, i])
                 for k in range(1, 4):
-                    temp ^= cls.GF(table[j, k]) * cls.GF(matrix[k, i])  # type: ignore
+                    temp ^= gf(table[j, k]) * gf(matrix[k, i])  # type: ignore
                 result[j, i] = temp
 
-        return result
+        return result.transpose()
 
     # Adds a padding to ensure a bloke size of 16 bytes
     def __add_padding(data):

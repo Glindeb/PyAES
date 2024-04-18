@@ -1,6 +1,5 @@
 import pytest
 import numpy as np
-from numpy.typing import NDArray
 import sys
 
 # Import AES class

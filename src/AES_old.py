@@ -6,67 +6,6 @@ from os import remove
 import numpy as np
 from immutables import *
 
-
-# Performs the encryption rounds on the input data matrix
-# This function is used for the encryption of data matrixes
-# using the expanded keys.
-def encryption_rounds(data, round_keys, nr):
-    # Inizial add round key
-    data = np.bitwise_xor(data, round_keys[0])
-
-    # Rounds 1 to 9 or 1 to 11 or 1 to 13
-    # Here each step in one round is performed in a sequence n times
-    # where n is the number of rounds minus the last round.
-    for i in range(1, (nr - 1)):
-        # Sub bytes
-        data = sub_bytes(data, subBytesTable)
-        # Shift rows
-        data = shift_rows(data)
-        # Mix columns
-        data = mix_columns(data)
-        # Add round key
-        data = np.bitwise_xor(data, round_keys[i])
-
-    # Final round
-    # Identical to the previous rounds, but without mix columns
-    data = sub_bytes(data, subBytesTable)
-    data = shift_rows(data)
-    data = np.bitwise_xor(data, round_keys[nr - 1])
-
-    # Returns the encrypted data
-    return data
-
-
-# Performs the decryption rounds on the input data matrix
-# This function is used for the decryption of data matrixes
-# using the expanded keys.
-def decryption_rounds(data, round_keys, nr):
-    # Inizial add round key, inverse shift rows and inverse sub bytes
-    data = np.bitwise_xor(data, round_keys[-1])
-    data = inv_shift_rows(data)
-    data = sub_bytes(data, invSubBytesTable)
-
-    # Rounds 1 to 9 or 1 to 11 or 1 to 13
-    # Here each step in one round is performed in a sequence n times
-    # where n is the number of rounds minus the last round.
-    for i in range(1, (nr - 1)):
-        # Add round key
-        data = np.bitwise_xor(data, round_keys[-(i+1)])
-        # Inverse mix columns
-        data = inv_mix_columns(data)
-        # Inverse shift rows
-        data = inv_shift_rows(data)
-        # Inverse sub bytes
-        data = sub_bytes(data, invSubBytesTable)
-
-    # Final round
-    # Final add round key of final round
-    data = np.bitwise_xor(data, round_keys[0])
-
-    # Returns the decrypted data
-    return data
-
-
 # ---------------
 # Running modes setup
 # ---------------

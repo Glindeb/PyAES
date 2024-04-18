@@ -24,15 +24,17 @@ from src.AES import AES
     ("30c81c46a35ce411e5fbc1191a0a52ef", "603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4", "b6ed21b99ca6f4f9f153e7b1beafed1d"),
     ("f69f2445df4f9b17ad2b417be66c3710", "603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4", "23304b7a39f9f3ff067d8d8f9e24ecc7"),
 ])
-def test_dec_schedule(data: str, key: str, expected: str) -> None:
+def test_enc_schedule(data, key: str, expected: str) -> None:
     # Formats input data
-    data: NDArray[np.int8] = np.frombuffer(bytes.fromhex(data), dtype=np.uint8).reshape(4, 4)
+    data = np.frombuffer(bytes.fromhex(data), dtype=np.uint8).reshape(4, 4)
 
     # Creates round keys
     round_keys: NDArray[np.int8] = AES.key_expand(key)
 
     # Runs decryption
-    result: NDArray[np.int8] = AES()._AES__enc_schedule(np.array(data, round_keys, len(round_keys))
+    result: NDArray[np.int8] = AES()._AES__enc_schedule(data, round_keys)
+
+    result_formatted = result.astype(np.uint8).tobytes().hex()
 
     # Evaluates result
-    assert result.tobytes().hex() == expected
+    assert result_formatted == expected

@@ -3,21 +3,23 @@ from numpy.typing import NDArray
 import sys
 sys.path.append('../')
 from src.AES import AES
-import galois
-
-GF = galois.GF(2**8, irreducible_poly=0x11b)
 
 
-A = np.array([[219, 242, 1, 198],
-              [19, 10, 1, 198],
-              [83, 34, 1, 198],
-              [69, 92, 1, 198]])
+A = "6bc1bee22e409f96e93d7e117393172a"
 
-B_ref = np.array([[142, 159, 1, 198],
-                  [77, 220, 1, 198],
-                  [161, 88, 1, 198],
-                  [188, 157, 1, 198]])
+print(A)
 
-print("A:", A, "\n")
+B = np.frombuffer(bytes.fromhex(A), dtype=np.uint8).reshape(4, 4)
 
-print("B_ref:", B_ref)
+print(B)
+
+print(B.astype(np.int8).tobytes().hex())
+
+C = np.array([[2, 3, 1, 1],  # Matrix used for shift columns operation
+                                         [1, 2, 3, 1],
+                                         [1, 1, 2, 3],
+                                         [3, 1, 1, 2]])
+
+print(C)
+C.transpose()
+print(C)
