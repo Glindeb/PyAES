@@ -6,6 +6,25 @@ from os import remove
 import numpy as np
 from immutables import *
 
+
+# Adds a padding to ensure a bloke size of 16 bytes
+def __add_padding(data):
+    length = 16 - len(data)
+    for i in range(length):
+        data.append(0)
+    return data, length
+
+
+# Removes the padding from the data
+def __remove_padding(data, identifier):
+    if identifier[-1] == 0:
+        return data
+    elif identifier[-1] > 0 and identifier[-1] < 16:
+        return data[:-identifier[-1]]
+    else:
+        raise ValueError('Invalid padding')
+
+
 # ---------------
 # Running modes setup
 # ---------------

@@ -8,8 +8,6 @@ import numpy as np
 import galois
 from numpy.typing import NDArray
 from secrets import token_bytes
-from os.path import getsize
-from os import remove
 
 
 class AES:
@@ -295,19 +293,3 @@ class AES:
                 result[j, i] = temp
 
         return result.transpose()
-
-    # Adds a padding to ensure a bloke size of 16 bytes
-    def __add_padding(data):
-        length = 16 - len(data)
-        for i in range(length):
-            data.append(0)
-        return data, length
-
-    # Removes the padding from the data
-    def __remove_padding(data, identifier):
-        if identifier[-1] == 0:
-            return data
-        elif identifier[-1] > 0 and identifier[-1] < 16:
-            return data[:-identifier[-1]]
-        else:
-            raise ValueError('Invalid padding')
