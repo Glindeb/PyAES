@@ -7,24 +7,22 @@ sys.path.append('../')
 from src.AES import AES
 
 
-@pytest.mark.parametrize("data,shift,expected", [(np.array([[0xDB, 0x13, 0x53, 0x45],
-                                                            [0xDB, 0x13, 0x53, 0x45],
-                                                            [0xDB, 0x13, 0x53, 0x45],
-                                                            [0xDB, 0x13, 0x53, 0x45]]), -1,
-                                                  np.array([[0x8E, 0x4D, 0xA1, 0xBC],
-                                                            [0x8E, 0x4D, 0xA1, 0xBC],
-                                                            [0x8E, 0x4D, 0xA1, 0xBC],
-                                                            [0x8E, 0x4D, 0xA1, 0xBC]
-                                                            ])),
-                                                 (np.array([[0x8E, 0x4D, 0xA1, 0xBC],
-                                                            [0x8E, 0x4D, 0xA1, 0xBC],
-                                                            [0x8E, 0x4D, 0xA1, 0xBC],
-                                                            [0x8E, 0x4D, 0xA1, 0xBC]]), -1,
-                                                  np.array([[0xDB, 0x13, 0x53, 0x45],
-                                                            [0xDB, 0x13, 0x53, 0x45],
-                                                            [0xDB, 0x13, 0x53, 0x45],
-                                                            [0xDB, 0x13, 0x53, 0x45]
-                                                            ]))
+@pytest.mark.parametrize("data,shift,expected", [(np.array([[99, 107, 103, 118],
+                                                            [242, 1, 171, 123],
+                                                            [48, 215, 119, 197],
+                                                            [254, 124, 111, 43]]), -1,
+                                                  np.array([[99, 107, 103, 118],
+                                                            [1, 171, 123, 242],
+                                                            [119, 197, 48, 215],
+                                                            [43, 254, 124, 111]])),
+                                                 (np.array([[99, 107, 103, 118],
+                                                            [1, 171, 123, 242],
+                                                            [119, 197, 48, 215],
+                                                            [43, 254, 124, 111]]), 1,
+                                                  np.array([[99, 107, 103, 118],
+                                                            [242, 1, 171, 123],
+                                                            [48, 215, 119, 197],
+                                                            [254, 124, 111, 43]]))
                                                  ])
 def test_shift_rows(data, shift, expected):
     result: NDArray[np.int8] = AES()._AES__shift_rows(data, shift)
