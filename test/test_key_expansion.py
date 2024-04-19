@@ -7,7 +7,7 @@ sys.path.append('../')
 from src.AES import AES
 
 
-# 128bit key tests
+# 128 bit key tests
 @pytest.mark.parametrize("key,r_keys", [
     ("00000000000000000000000000000000", np.array([[[0, 0, 0, 0],
                                                     [0, 0, 0, 0],
@@ -193,7 +193,7 @@ def test_aes_key_expansion_128bit(key, r_keys):
     assert np.array_equal(AES.key_expand(key), r_keys)
 
 
-# 192bit key test
+# 192 bit key tests
 @pytest.mark.parametrize("key,r_keys", [
     ("000000000000000000000000000000000000000000000000", np.array([
                                                                  [[0, 0, 0, 0],
@@ -359,7 +359,7 @@ def test_aes_key_expansion_192bit(key, r_keys):
     assert np.array_equal(AES.key_expand(key), r_keys)
 
 
-# 256bit key test
+# 256 bit key tests
 @pytest.mark.parametrize("key,r_keys", [
     ("0000000000000000000000000000000000000000000000000000000000000000", np.array([
                                                                                  [[0x00, 0x00, 0x00, 0x00],
