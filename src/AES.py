@@ -3,11 +3,11 @@ a pure Python implementation of AES that is designed to be used as an educationa
 only. It is not intended to be used in any other use case than educational and no
 security is guaranteed for data encrypted or decrypted using this tool."""
 
-# Imports
-import numpy as np
-import galois
-from numpy.typing import NDArray
-from secrets import token_bytes
+# Imported libraries
+import numpy as np  # Used for arrays and mathematical operations.
+import galois  # Used for GF(2^8) multiplication in mix columns operation.
+from numpy.typing import NDArray  # Used for type hinting numpy arrays.
+from secrets import token_bytes  # Used for generating random key if needed.
 
 
 class AES:
@@ -69,35 +69,66 @@ class AES:
         0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
     ])
 
-    def __init__(self, *, r_mode: str = "ECB", version: int = 128, key: str = "") -> None:
+    def __init__(self, *, running_mode: str = "ECB", version: str = "128", key: str = "", iv: str = "") -> None:
         """
         Initialization of AES object.
-        :param r_mode: Specify running mode. (ECB, CBC, OFB, PCBC...)
+        :param running_mode: Specify running mode. (ECB or CBC)
         :param version: Specify AES encryption version. (128, 256, 512)
         :param key: Key used for encryption. If not specified generates random key.
+        :param iv: Initialization vector used during CBC running mode.
         :return: None.
         """
         if key:
             self.key: str = key
         else:
-            self.key = str(self.key_gen(version // 8))
+            self.key = str(self.key_gen(int(version) // 8))  # Generates key if missing
 
-        self.r_mode: str = r_mode
+        if iv:
+            self.iv = iv
+        else:
+            self.iv = str(self.key_gen())  # Generates iv if missing
+
+        self.r_mode: str = running_mode
 
     def set_key(self, key) -> None:
+        """
+        Changes the current key used for encryption and decryption.
+        :param key: New key, must be either 16, 24 or 32 bytes.
+        :return: None.
+        """
         if isinstance(key, str) and ((len(key) / 2) in [16, 24, 32]):
             self.key = key
         else:
             raise TypeError("Unsupported key length, supported types are (16, 24, 32) bytes.")
 
     def get_key(self) -> str:
+        """
+        Gets the current key used for encryption and decryption.
+        :return: Key as string of hexadecimals.
+        """
         return self.key
 
-    def enc(self) -> bytes:
+    def enc(self, *, data_string: str = "", file_path: str = "",
+            running_mode: str = "", key: str = "", iv: str = "") -> str | None:
         raise NotImplementedError
 
-    def dec(self) -> bytes:
+    def dec(self, *, data_string: str = "", file_path: str = "",
+            running_mode: str = "", key: str = "", iv: str = "") -> str | None:
         raise NotImplementedError
+
+    def __ecb(self):
+        raise NotImplementedError
+
+    def __cbc(self) -> str | None:
+        raise NotImplementedError
+
+    @staticmethod
+    def key_gen(length: int = 16) -> str:
+        """ Generates a random byte string of specified length using secrets library.
+        :param length: Length of byte sequence (number of bytes).
+        :returns: Byte sequence string.
+        """
+        return token_bytes(length).hex()
 
     @classmethod
     def __enc_schedule(cls, data: NDArray[np.uint8], r_keys: NDArray[np.uint8]) -> NDArray[np.uint8]:
@@ -143,26 +174,18 @@ class AES:
         data = cls.INV_SUB_BOX[data]
 
         for i in range(2, nr):
-            data = np.bitwise_xor(data, r_keys[-i])     # Inverse add round key
-            data = cls.__mix_columns(data, 1)      # Inverse mix columns
-            data = cls.__shift_rows(data, 1)       # Inverse shift rows
-            data = cls.INV_SUB_BOX[data]                # Inverse sub bytes
+            data = np.bitwise_xor(data, r_keys[-i])  # Inverse add round key
+            data = cls.__mix_columns(data, 1)  # Inverse mix columns
+            data = cls.__shift_rows(data, 1)  # Inverse shift rows
+            data = cls.INV_SUB_BOX[data]  # Inverse sub bytes
 
         # Final round (Identical to first operation in enc_schedule)
         data = np.bitwise_xor(data, r_keys[0])
 
         return data
 
-    @staticmethod
-    def key_gen(length: int = 16) -> str:
-        """ Generates a random byte string of specified length using secrets library.
-        :param length: Length of byte sequence (number of bytes).
-        :returns: Byte sequence string.
-        """
-        return token_bytes(length).hex()
-
     @classmethod
-    def key_expand(cls, key: str = '') -> NDArray[np.uint8]:
+    def key_expand(cls, key: str) -> NDArray[np.uint8]:
         """
         Expands the given key to 11, 13 or 15 round key depending on key length.
         :param key: Key that is expanded.
@@ -269,13 +292,13 @@ class AES:
         gf = galois.GF(2 ** 8, irreducible_poly=0x11b)
 
         cx: NDArray[np.uint8] = np.array([[2, 3, 1, 1],  # Matrix used for shift columns operation
-                                         [1, 2, 3, 1],
-                                         [1, 1, 2, 3],
-                                         [3, 1, 1, 2]])
+                                          [1, 2, 3, 1],
+                                          [1, 1, 2, 3],
+                                          [3, 1, 1, 2]])
         dx: NDArray[np.uint8] = np.array([[14, 11, 13, 9],  # Matrix used for inverse shift columns operation
-                                         [9, 14, 11, 13],
-                                         [13, 9, 14, 11],
-                                         [11, 13, 9, 14]])
+                                          [9, 14, 11, 13],
+                                          [13, 9, 14, 11],
+                                          [11, 13, 9, 14]])
 
         # Determines if preforming inverse operation or not
         if shift < 0:

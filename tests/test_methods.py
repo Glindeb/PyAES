@@ -25,7 +25,7 @@ from src.AES import AES
                                                             [43, 197, 123, 118]]))
                                                  ])
 def test_shift_rows(data, shift, expected):
-    result: NDArray[np.int8] = AES()._AES__shift_rows(data, shift)
+    result: NDArray[np.uint8] = AES()._AES__shift_rows(data, shift)  # type: ignore
 
     assert np.array_equal(result, expected)
 
@@ -48,6 +48,6 @@ def test_shift_rows(data, shift, expected):
                                                             [171, 94, 193, 210]]))
                                                  ])
 def test_mix_columns(data, shift, expected):
-    result: NDArray[np.int8] = AES()._AES__mix_columns(data, shift)
+    result: NDArray[np.uint8] = AES()._AES__mix_columns(data, shift)    # type: ignore
 
     assert np.array_equal(result, expected)
