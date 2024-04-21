@@ -1,8 +1,8 @@
 from .main import AES
 
-# ---------------
+# --------------------
 # Project information
-# ---------------
+# --------------------
 __name__ = "AES_Python"
 __author__ = 'Gabriel Lindeblad'
 __copyright__ = 'Copyright 2024, Gabriel Lindeblad'
