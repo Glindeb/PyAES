@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=64.0", "setuptools-scm>=8.0"]
+requires = ["setuptools>=64.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "AES_Python"
-dynamic = ["version"]
+version = "v1.5.1"
 description = "AES (Advanced Encryption Standard) implementation in Python-3"
 readme = "README.md"
 authors = [{name = "Gabriel Lindeblad", email = "Gabriel.Lindeblad@icloud.com"}]
@@ -17,8 +17,6 @@ classifiers = [
 ]
 keywords = ["AES", "AES-Python", "Advanced Encryption Standard", "encryption", "cryptography"]
 requires-python = ">=3.8"
-
-[tool.setuptools_scm]
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-cov", "mypy", "flake8", "tox"]
