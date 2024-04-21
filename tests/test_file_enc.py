@@ -1,9 +1,6 @@
-import sys
 import os
 import pytest
-
-sys.path.append('../')
-from src.AES import AES
+from AES_Python import AES
 
 
 @pytest.mark.parametrize("data,key,file_name,expected", [

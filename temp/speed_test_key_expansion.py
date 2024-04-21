@@ -1,4 +1,3 @@
-import numpy as np
 import sys
 from time import time
 from typing import Callable

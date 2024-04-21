@@ -1,10 +1,7 @@
-import sys
 import pytest
 import numpy as np
 from numpy.typing import NDArray
-
-sys.path.append('../')
-from src.AES import AES
+from AES_Python import AES
 
 
 @pytest.mark.parametrize("data,key,expected", [

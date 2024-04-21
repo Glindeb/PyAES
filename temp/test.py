@@ -1,9 +1,6 @@
 import numpy as np
-from numpy.typing import NDArray
 import sys
 sys.path.append('../')
-from src.AES import AES
-
 
 A = "6bc1bee22e409f96e93d7e117393172a"
 

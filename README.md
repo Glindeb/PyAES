@@ -33,14 +33,14 @@ This is a short guide to help you get started.
 You can install the latest version of `AES-Python` from [PyPI](Fix this link!!!!) using pip.
 
 ```
-$ python3 -m pip install AES-Python
+$ python3 -m pip install AES_Python
 ```
 
 ### Usage
 Now you can import it and use it in you projects. Below is a short example snippet of how to utilize the package.
 
 ```
-from AES-Python.AES import AES
+from AES_Python import AES
 
 # Initialize the AES object
 aes = AES(r_mode="ECB", key="your-encryption-key")

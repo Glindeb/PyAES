@@ -1,4 +1,4 @@
-"""This is a simple AES (Advanced Encryption Standard) implementation in Python 3.12. this
+"""This is a simple AES (Advanced Encryption Standard) implementation in Python 3.12. This
 implementation is designed to be used as an educational tool only. It is not intended to
 be used in any other use case than educational and no security is guaranteed for data
 encrypted or decrypted using this tool."""

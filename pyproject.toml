@@ -1,6 +1,43 @@
+[build-system]
+requires = ["setuptools>=64.0", "setuptools-scm>=8.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "AES_Python"
+dynamic = ["version"]
+description = "AES (Advanced Encryption Standard) implementation in Python-3"
+readme = "README.md"
+authors = [{name = "Gabriel Lindeblad", email = "Gabriel.Lindeblad@icloud.com"}]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Education",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+keywords = ["AES", "AES-Python", "Advanced Encryption Standard", "encryption", "cryptography"]
+requires-python = ">=3.8"
+
+[tool.setuptools_scm]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov", "mypy", "flake8", "tox"]
+
+[project.urls]
+Homepage = "https://github.com/Glindeb/AES-Python"
+Repository = "https://github.com/Glindeb/AES-Python"
+Documentation = "https://github.com/Glindeb/AES-Python"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.pytest.ini_options]
 testpaths = [
-    "test",
+    "tests",
 ]
 
 [tool.mypy]
