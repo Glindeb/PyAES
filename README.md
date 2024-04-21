@@ -5,6 +5,7 @@
   <a><img src="https://img.shields.io/github/repo-size/glindeb/AES-python?label=size"></a>  
   <a><img src="https://img.shields.io/github/license/glindeb/AES-Python"></a>
   <a><img src="https://github.com/Glindeb/AES-Python/actions/workflows/test.yml/badge.svg"></a>
+  <a><img src="https://github.com/Glindeb/AES-Python/actions/workflows/publish.yml/badge.svg?branch=core"> </a>
 </div>
 
 The `AES-Python` package is a Python implementation of the [Advanced Encryption Standard (AES)](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) using symmetric key cryptography. It supports two different modes of operation ([ECB, CBC](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation)) and the key lengths 128, 256, 512 bit. This project was originally created as a school project using almost only built in python libraries, but has now been updated and adapted to more heavily really on the [NumPy](https://numpy.org) and [galois](https://github.com/mhostetter/galois) packages. It has also been migrated to a more [OOP](https://en.wikipedia.org/wiki/Object-oriented_programming) focused structure. (The original school project can be seen in the [legacy](https://github.com/Glindeb/AES-Python/tree/legacy) branch.) 
