@@ -1,7 +1,7 @@
-"""This is a simple AES (Advanced Encryption Standard) implementation in Python 3.12. It is
-a pure Python implementation of AES that is designed to be used as an educational tool
-only. It is not intended to be used in any other use case than educational and no
-security is guaranteed for data encrypted or decrypted using this tool."""
+"""This is a simple AES (Advanced Encryption Standard) implementation in Python 3.12. this
+implementation is designed to be used as an educational tool only. It is not intended to
+be used in any other use case than educational and no security is guaranteed for data
+encrypted or decrypted using this tool."""
 
 # Imported libraries
 import numpy as np  # Used for arrays and mathematical operations.
