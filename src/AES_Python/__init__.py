@@ -1,7 +1,7 @@
 from .main import AES
 
 # ---------------
-# Project information m.m
+# Project information
 # ---------------
 __name__ = "AES_Python"
 __author__ = 'Gabriel Lindeblad'
