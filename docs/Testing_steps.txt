@@ -1,0 +1,7 @@
+To execute full test (command):
+- tox
+
+To execute individual tests (command):
+- flake8 src
+- mypy src
+- pytest

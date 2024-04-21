@@ -1,6 +1,7 @@
-flake8==4.0.1
-tox==3.25.0
-pytest==7.1.2
-pytest-cov==3.0.0
-mypy==0.961
-numpy==1.23.4
+flake8
+tox
+pytest
+pytest-cov
+mypy
+numpy
+galois

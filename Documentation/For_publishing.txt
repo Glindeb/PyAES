@@ -1,4 +1,0 @@
-https://realpython.com/pypi-publish-python-package/
-
-for building
-Python3 -m build
