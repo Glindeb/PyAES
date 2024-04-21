@@ -1,6 +1,12 @@
-# AES-Python
+# ![AES-Python: A Python implementation of the Advanced Encryption Standard (AES)](https://raw.githubusercontent.com/glindeb/aes-python/core-restructure/repo/AES-Python-logo.png)
 
-[![Core Build & Publish](https://github.com/Glindeb/AES-Python/actions/workflows/core.yml/badge.svg)](https://github.com/Glindeb/AES-Python/actions/workflows/core.yml) [![CodeQL](https://github.com/Glindeb/AES-Python/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/Glindeb/AES-Python/actions/workflows/codeql-analysis.yml) [![Test](https://github.com/Glindeb/AES-Python/actions/workflows/test.yml/badge.svg)](https://github.com/Glindeb/AES-Python/actions/workflows/test.yml)
+<div align=center>
+  <a><img src="https://img.shields.io/badge/python%20-%203.8%20%7C%C2%A03.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20-%20blue?logo=python&logoColor=white&color=247ac9"></a>
+  <a><img src="https://img.shields.io/github/license/glindeb/AES-Python"></a>
+  <a><img src="https://img.shields.io/github/issues/glindeb/AES-Python.svg"></a>
+  <a><img src="https://img.shields.io/github/repo-size/glindeb/AES-python?label=size"></a>
+  <a><img src="https://github.com/Glindeb/AES-Python/actions/workflows/test.yml/badge.svg"></a>
+</div>
 
 - [AES-Python](#aes-python)
   - [About](#about)
@@ -26,11 +32,6 @@ Implemented running modes
 ---
 - [x] **ECB** - Electronic Code Book mode (For more information see ...)
 - [x] **CBC** - Cipher Block Chaining mode (For more information see ...)
-- [x] **PCBC** - Propagating Cipher Block Chaining mode (For more information see ...)
-- [ ] **CFB** - Cipher Feedback mode (For more information see ...)
-- [x] **OFB** - Output FeedBack mode (For more information see ...)
-- [ ] **CTR** - Counter mode (For more information see ...)
-- [ ] **GCM** - Galois/Counter mode (For more information see ...)
 
 More information
 ---
