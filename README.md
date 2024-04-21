@@ -1,4 +1,4 @@
-# ![AES-Python: A Python implementation of the Advanced Encryption Standard (AES)](https://raw.githubusercontent.com/glindeb/aes-python/core-restructure/repo/AES-Python-logo.png)
+# ![AES-Python: A Python implementation of the Advanced Encryption Standard (AES)](https://raw.githubusercontent.com/glindeb/aes-python/core/repo/AES-Python-logo.png)
 
 <div align=center>
   <a><img src="https://img.shields.io/badge/python%20-%203.8%20%7C%C2%A03.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20-%20blue?logo=python&logoColor=white&color=247ac9"></a>
