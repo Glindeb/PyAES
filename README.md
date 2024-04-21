@@ -31,7 +31,7 @@ Getting started
 This is a short guide to help you get started.
 
 ### Installation
-You can install the latest version of `AES-Python` from [PyPI](Fix this link!!!!) using pip.
+You can install the latest version of `AES-Python` from [PyPI](https://pypi.org/project/AES-Python/) using pip.
 
 ```
 $ python3 -m pip install AES_Python
