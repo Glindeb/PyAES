@@ -4,10 +4,11 @@ be used in any other use case than educational and no security is guaranteed for
 encrypted or decrypted using this tool."""
 
 # Imported libraries
-import numpy as np  # Used for arrays and mathematical operations.
-import galois  # Used for GF(2^8) multiplication in mix columns operation.
-from numpy.typing import NDArray  # Used for type hinting numpy arrays.
-from secrets import token_bytes  # Used for generating random key if needed.
+import numpy as np                  # Used for arrays and mathematical operations.
+import galois                       # Used for GF(2^8) multiplication in mix columns operation.
+from numpy.typing import NDArray    # Used for type hinting numpy arrays.
+from typing import Any              # Used for type hinting __getattr__ function.
+from secrets import token_bytes     # Used for generating random key if needed.
 
 
 class AES:
@@ -16,16 +17,14 @@ class AES:
     It supports different modes of operation (ECB, CBC) and key lengths (128, 256, 512 bits).
 
     Attributes:
-        version (int): The version of the encryption, either 128, 192 or 256 bit.
-        r_mode (str): The running mode for AES. Default is "ECB".
+        version (str): The version of the encryption, either 128, 192 or 256 bit.
+        running_mode (str): The running mode for AES. Default is "ECB".
         key (str): The encryption key. If not provided, a random key is generated.
 
     Methods:
-        set_key: Sets the encryption key.
-        get_key: Returns the current encryption key.
-        enc: Encrypts string of unspecified length.
-        dec: Decrypts string.
-        key_gen: Generates a random byte string of specified length (16, 24 or 32 bytes).
+        enc: Encrypts either a string of unspecified length or a file.
+        dec: Decrypts string or file.
+        key_gen: Generates a random byte string of specified length (16, 24 or 32 bytes) in hexadecimal.
         key_expand: Expands the given key to 11, 13 or 15 round keys depending on key length.
     """
 
@@ -88,25 +87,35 @@ class AES:
         else:
             self.iv = str(self.key_gen())  # Generates iv if missing
 
-        self.r_mode: str = running_mode
+        self.running_mode: str = running_mode
 
-    def set_key(self, key) -> None:
-        """
-        Changes the current key used for encryption and decryption.
-        :param key: New key, must be either 16, 24 or 32 bytes.
-        :return: None.
-        """
-        if isinstance(key, str) and ((len(key) / 2) in [16, 24, 32]):
-            self.key = key
+    def __setattr__(self, attr, value) -> None:
+        if attr == "key":
+            if isinstance(value, str) and ((len(value) / 2) in [16, 24, 32]):
+                self.__dict__[attr] = value
+            else:
+                raise TypeError("Unsupported key length, supported types are (16, 24, 32) bytes.")
+        elif attr == "iv":
+            if isinstance(value, str) and ((len(value) / 2) == 16):
+                self.__dict__[attr] = value
+            else:
+                raise TypeError("Unsupported iv length, supported length is 16 bytes.")
+        elif attr == "running_mode":
+            if isinstance(value, str) and value in ["ECB", "CBC"]:
+                self.__dict__[attr] = value
+            else:
+                raise TypeError("Unsupported running mode, supported modes are ECB, CBC.")
         else:
-            raise TypeError("Unsupported key length, supported types are (16, 24, 32) bytes.")
+            raise AttributeError(f"No attribute <{attr}> exists!")
 
-    def get_key(self) -> str:
-        """
-        Gets the current key used for encryption and decryption.
-        :return: Key as string of hexadecimals.
-        """
-        return self.key
+    def __getattr__(self, item) -> Any:
+        if item in ["key", "iv", "running_mode"]:
+            return self.__dict__[item]
+        else:
+            raise AttributeError(f"No attribute <{item}> exists!")
+
+    def __repr__(self) -> str:
+        raise NotImplementedError
 
     def enc(self, *, data_string: str = "", file_path: str = "",
             running_mode: str = "", key: str = "", iv: str = "") -> str | None:

@@ -1,22 +1,16 @@
 import numpy as np
-import sys
-sys.path.append('../')
+from AES_Python import AES
 
-A = "6bc1bee22e409f96e93d7e117393172a"
+aes_test = AES()
 
-print(A)
+print("Key:", aes_test.key)
+print("IV:", aes_test.iv)
+print("Running mode:", aes_test.running_mode, "\n")
 
-B = np.frombuffer(bytes.fromhex(A), dtype=np.uint8).reshape(4, 4)
+aes_test.key = AES.key_gen()
+aes_test.iv = AES.key_gen()
+aes_test.running_mode = "CBC"
 
-print(B)
-
-print(B.astype(np.int8).tobytes().hex())
-
-C = np.array([[2, 3, 1, 1],  # Matrix used for shift columns operation
-                                         [1, 2, 3, 1],
-                                         [1, 1, 2, 3],
-                                         [3, 1, 1, 2]])
-
-print(C)
-C.transpose()
-print(C)
+print("Key:", aes_test.key)
+print("IV:", aes_test.iv)
+print("Running mode:", aes_test.running_mode)
