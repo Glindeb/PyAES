@@ -1,16 +1,17 @@
 import numpy as np
 from AES_Python import AES
 
-aes_test = AES()
+aes_test = AES(key="8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b")
 
-print("Key:", aes_test.key)
-print("IV:", aes_test.iv)
-print("Running mode:", aes_test.running_mode, "\n")
+print(aes_test)
 
-aes_test.key = AES.key_gen()
-aes_test.iv = AES.key_gen()
-aes_test.running_mode = "CBC"
+data = '1234567890123456'
 
-print("Key:", aes_test.key)
-print("IV:", aes_test.iv)
-print("Running mode:", aes_test.running_mode)
+enc_data = aes_test.enc(data_string=data)
+
+print("Enc_data:", enc_data)
+print("Bytes_data:", bytes(enc_data, "utf-8"))  # type:ignore
+
+dec_data = aes_test.dec(data_string=enc_data)   # type: ignore
+
+print(dec_data)

@@ -23,7 +23,7 @@ from AES_Python import AES
     (b"\x8cc'\xc8d\x82\xb3\x8cj\xd2\\\xaa\x96\xf1\xffi\xe5h\xf6\x81\x94\xcfv\xd6\x17ML\xc0C\x10\xa8T",
      "603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4", "tmp6.txt", b'1234567890123456')
 ])
-def test_dec_ecb(data, key, file_name, expected):
+def test_file_dec_ecb(data, key, file_name, expected):
     with open(f"{file_name}.enc", "wb") as file:
         file.write(data)
 
@@ -60,7 +60,7 @@ def test_dec_ecb(data, key, file_name, expected):
     (b'a\xfdIRQ\xf8\xf1D\xcc\xbf\x89\xc8\xd6\xec\x01;pNAT\xedT\xd9Tp-_\xbbr\xd3\xb5\x11',
      "603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4", "tmp6.txt", "000102030405060708090a0b0c0d0e0f", b'1234567890123456')
 ])
-def test_dec_cbc(data, key, file_name, iv, expected):
+def test_file_dec_cbc(data, key, file_name, iv, expected):
     with open(f"{file_name}.enc", "wb") as file:
         file.write(data)
 

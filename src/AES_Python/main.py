@@ -4,11 +4,11 @@ be used in any other use case than educational and no security is guaranteed for
 encrypted or decrypted using this tool."""
 
 # Imported libraries
-import numpy as np                  # Used for arrays and mathematical operations.
-import galois                       # Used for GF(2^8) multiplication in mix columns operation.
-from numpy.typing import NDArray    # Used for type hinting numpy arrays.
-from typing import Any              # Used for type hinting __getattr__ function.
-from secrets import token_bytes     # Used for generating random key if needed.
+import numpy as np  # Used for arrays and mathematical operations.
+import galois  # Used for GF(2^8) multiplication in mix columns operation.
+from numpy.typing import NDArray  # Used for type hinting numpy arrays.
+from typing import Any  # Used for type hinting __getattr__ function.
+from secrets import token_bytes  # Used for generating random key if needed.
 
 
 class AES:
@@ -68,6 +68,9 @@ class AES:
         0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
     ])
 
+    # Vectorize built-in chr() function
+    vec_chr = np.vectorize(chr)
+
     def __init__(self, *, running_mode: str = "ECB", version: str = "128", key: str = "", iv: str = "") -> None:
         """
         Initialization of AES object.
@@ -106,7 +109,7 @@ class AES:
             else:
                 raise TypeError("Unsupported running mode, supported modes are ECB, CBC.")
         else:
-            raise AttributeError(f"No attribute <{attr}> exists!")
+            raise AttributeError(f"No changeable attribute <{attr}> exists!")
 
     def __getattr__(self, item) -> Any:
         if item in ["key", "iv", "running_mode"]:
@@ -114,22 +117,102 @@ class AES:
         else:
             raise AttributeError(f"No attribute <{item}> exists!")
 
+    def __delattr__(self, item):
+        raise PermissionError(f"You can not delete the attribute <{item}>")
+
     def __repr__(self) -> str:
-        raise NotImplementedError
+        return (f"Object <{type(self).__name__}>. \n"
+                f" - Running mode = '{self.running_mode}' \n"
+                f" - Key = '{self.key}' \n"
+                f" - IV = '{self.iv}' ")
 
     def enc(self, *, data_string: str = "", file_path: str = "",
             running_mode: str = "", key: str = "", iv: str = "") -> str | None:
-        raise NotImplementedError
+        if not running_mode:
+            running_mode = self.running_mode
+
+        if not key:
+            key = self.key
+
+        if not iv:
+            iv = self.iv
+
+        if data_string:
+            if running_mode == "ECB":
+                return self.__ecb_enc(data_string=data_string, keys=self.key_expand(key))
+            elif running_mode == "CBC":
+                raise NotImplementedError
+            else:
+                raise NotImplementedError
+        else:
+            raise NotImplementedError
 
     def dec(self, *, data_string: str = "", file_path: str = "",
             running_mode: str = "", key: str = "", iv: str = "") -> str | None:
+        if not running_mode:
+            running_mode = self.running_mode
+
+        if not key:
+            key = self.key
+
+        if not iv:
+            iv = self.iv
+
+        if data_string:
+            if running_mode == "ECB":
+                return self.__ecb_dec(data_string=data_string, keys=self.key_expand(key))
+            elif running_mode == "CBC":
+                raise NotImplementedError
+            else:
+                raise NotImplementedError
+        else:
+            raise NotImplementedError
+
+    def __ecb_enc(self, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8]) -> str | None:
+        if data_string:
+            output_string: str = ""
+
+            for i in range(len(data_string) // 16):
+                raw: NDArray[np.uint8] = np.array([ord(i) for i in data_string[(i * 16): ((i + 1) * 16)]],
+                                                  dtype=np.uint8).reshape(4, 4)
+
+                enc: str = "".join(self.vec_chr(self.__enc_schedule(raw, keys).flatten().astype(np.uint8)))
+                output_string += enc
+
+            extra = len(data_string) % 16
+            result: str = ""
+
+            if extra != 0:
+                raw = np.full(16, 0, dtype=np.uint8)
+                raw[:extra] = np.array([ord(i) for i in data_string][-1 * extra:], dtype=np.uint8)
+
+                result = "".join(self.vec_chr(self.__enc_schedule(raw.reshape(4, 4), keys).flatten().astype(np.uint8)))
+
+            return output_string + result
+        else:
+            raise NotImplementedError
+
+    def __ecb_dec(self, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8]) -> str | None:
+        if data_string:
+            output_string: str = ""
+
+            for i in range(len(data_string) // 16):
+                raw: NDArray[np.uint8] = np.array(
+                    [ord(i) for i in data_string[(i * 16): ((i + 1) * 16)]], dtype=np.uint8).reshape(4, 4)
+
+                dec: str = "".join(self.vec_chr(self.__dec_schedule(raw, keys).flatten().astype(np.uint8)))
+
+                output_string += dec
+
+            return output_string
+        else:
+            raise NotImplementedError
+
+    def __cbc_enc(self, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8]) -> str | None:
         raise NotImplementedError
 
-    def __ecb(self):
-        raise NotImplementedError
-
-    def __cbc(self) -> str | None:
-        raise NotImplementedError
+    def __cbc_dec(self, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8]) -> str | None:
+        raise  NotImplementedError
 
     @staticmethod
     def key_gen(length: int = 16) -> str:
@@ -248,10 +331,10 @@ class AES:
                                             [0xab, 0x00, 0x00, 0x00],
                                             [0x4d, 0x00, 0x00, 0x00],
                                             [0x9a, 0x00, 0x00, 0x00],
-                                            ])
+                                            ], dtype=np.uint8)
 
         # Setup list of matrices to store the words
-        words: NDArray[np.uint8] = np.full((nr * 4, 4), 0, dtype=int)
+        words: NDArray[np.uint8] = np.full((nr * 4, 4), 0, dtype=np.uint8)
 
         # Populating first words with key
         words[0:nc] = np.array_split(key, nc)
@@ -303,11 +386,11 @@ class AES:
         cx: NDArray[np.uint8] = np.array([[2, 3, 1, 1],  # Matrix used for shift columns operation
                                           [1, 2, 3, 1],
                                           [1, 1, 2, 3],
-                                          [3, 1, 1, 2]])
+                                          [3, 1, 1, 2]], dtype=np.uint8)
         dx: NDArray[np.uint8] = np.array([[14, 11, 13, 9],  # Matrix used for inverse shift columns operation
                                           [9, 14, 11, 13],
                                           [13, 9, 14, 11],
-                                          [11, 13, 9, 14]])
+                                          [11, 13, 9, 14]], dtype=np.uint8)
 
         # Determines if preforming inverse operation or not
         if shift < 0:
