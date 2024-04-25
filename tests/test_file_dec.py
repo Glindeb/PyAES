@@ -3,7 +3,6 @@ import pytest
 from AES_Python import AES
 
 
-@pytest.mark.skip(reason="Not correctly implemented yet")
 @pytest.mark.parametrize("data,key,file_name,expected", [
     # 128 bit
     (b'|\x94\x18\xcf\x1c\xf0\xef\xa0\xff\xa4\xbb\xe9\xd8\x8am\xa40f\xe4\x1eg\x9d\x88\xb8\xef\xeb{=J\xf3\xf6\xc1',
@@ -28,7 +27,7 @@ def test_file_dec_ecb(data, key, file_name, expected):
         file.write(data)
 
     ecb = AES(key=key, running_mode="ECB")
-    ecb.dec(file_path=file_name)
+    ecb.dec(file_path=f"{file_name}.enc")
 
     with open(file_name, "rb") as file:
         result = file.read()
@@ -38,7 +37,6 @@ def test_file_dec_ecb(data, key, file_name, expected):
     assert result == expected
 
 
-@pytest.mark.skip(reason="Not correctly implemented yet")
 @pytest.mark.parametrize("data,key,file_name,iv,expected", [
     # 128 bit
     (b'\xe4\xa7\x0e\xbd\x84\xfa\xf5\xd8`\xb8\xa1\x10\x0b~\xadh\x89Feso\xc5~_|\xe9\x1bG\xd9*\\\x81',
@@ -64,8 +62,8 @@ def test_file_dec_cbc(data, key, file_name, iv, expected):
     with open(f"{file_name}.enc", "wb") as file:
         file.write(data)
 
-    cbc = AES(key=key, running_mode="CBC")
-    cbc.dec(file_path=file_name)
+    cbc = AES(key=key, iv=iv, running_mode="CBC")
+    cbc.dec(file_path=f"{file_name}.enc")
 
     with open(file_name, "rb") as file:
         result = file.read()

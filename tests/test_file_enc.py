@@ -3,7 +3,6 @@ import pytest
 from AES_Python import AES
 
 
-@pytest.mark.skip(reason="Not correctly implemented yet")
 @pytest.mark.parametrize("data,key,file_name,expected", [
     # 128 bit
     (b'1234567890', "2b7e151628aed2a6abf7158809cf4f3c", "tmp.txt",
@@ -36,7 +35,6 @@ def test_file_enc_ecb(data, key, file_name, expected):
     assert result == expected
 
 
-@pytest.mark.skip(reason="Not correctly implemented yet")
 @pytest.mark.parametrize("data,key,file_name,iv,expected", [
     # 128 bit
     (b'1234567890', "2b7e151628aed2a6abf7158809cf4f3c", "tmp.txt",
