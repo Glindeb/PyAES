@@ -1,11 +1,11 @@
 import numpy as np
 from AES_Python import AES
 
-aes_test = AES(key="8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b")
+aes_test = AES(running_mode="CBC")
 
 print(aes_test, "\n")
 
-data = '1234567890123456'
+data = 'En lång text med en massa tecken som behöver hantaeras separat och kräver flera rundor'
 
 print("Original data:", data)
 

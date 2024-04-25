@@ -157,17 +157,17 @@ class AES:
         if not running_mode:
             running_mode = self._running_mode
         else:
-            self._running_mode = running_mode
+            self.set("running_mode", running_mode)
 
         if not key:
             key = self._key
         else:
-            self._key = key
+            self.set("key", key)
 
         if not iv:
             iv = self._iv
         else:
-            self._iv = iv
+            self.set("iv", iv)
 
         if data_string:
             if running_mode == "ECB":
@@ -193,17 +193,17 @@ class AES:
         if not running_mode:
             running_mode = self._running_mode
         else:
-            self._running_mode = running_mode
+            self.set("running_mode", running_mode)
 
         if not key:
             key = self._key
         else:
-            self._key = key
+            self.set("key", key)
 
         if not iv:
             iv = self._iv
         else:
-            self._iv = iv
+            self.set("iv", iv)
 
         if data_string:
             if running_mode == "ECB":
@@ -273,11 +273,71 @@ class AES:
 
     @classmethod
     def __cbc_enc(cls, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8], iv: str) -> str:
-        raise NotImplementedError("CBC encryption not yet implemented...")
+        """
+        Preforms CBC encryption instructions on specified file or data string.
+        :param data_string: Data string to be encrypted.
+        :param file_path: Path to file that is encrypted.
+        :param keys: Key used for encryption.
+        :param iv: Initialization vector used.
+        :return: Data string or writes encrypted file.
+        """
+        enc_array: NDArray[np.uint8] = np.frombuffer(bytes.fromhex(iv), dtype=np.uint8).reshape(4, 4)
+
+        if data_string:
+            output_string: str = ""
+
+            for i in range(len(data_string) // 16):  # Encryption cycle, skips last if not integer multiple of 16 bytes
+                raw: NDArray[np.uint8] = np.array([ord(i) for i in data_string[(i * 16): ((i + 1) * 16)]],
+                                                  dtype=np.uint8).reshape(4, 4)
+                enc = np.bitwise_xor(raw, enc_array)    # Xor operation with previous encrypted block or iv
+                enc_array = cls.__enc_schedule(enc, keys)
+                output_string += "".join(cls.vec_chr(enc_array.flatten().astype(np.uint8)))
+
+            extra = len(data_string) % 16  # Calculates length of final data block
+            result: str = ""
+
+            if extra != 0:  # If last data block not integer multiple of 16 adds extra padding
+                raw = np.full(16, 0, dtype=np.uint8)
+                raw[:extra] = np.array([ord(i) for i in data_string][-1 * extra:], dtype=np.uint8)
+                raw = raw.reshape(4, 4)
+
+                temp_array = np.bitwise_xor(raw, enc_array)  # Xor operation with previous encrypted block
+
+                result = "".join(cls.vec_chr(cls.__enc_schedule(temp_array, keys).flatten().astype(np.uint8)))
+
+            return output_string + result
+        else:
+            raise NotImplementedError
 
     @classmethod
     def __cbc_dec(cls, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8], iv: str) -> str:
-        raise NotImplementedError("CBC decryption not yet implemented...")
+        """
+        Preforms CBC decryption instructions on specified file or data string.
+        :param data_string: Data string to be decrypted.
+        :param file_path: Path to file that is decrypted.
+        :param keys: Key used for decryption.
+        :param iv: Initialization vector used.
+        :return: Data string or writes decrypted file.
+        """
+        dec_array: NDArray[np.uint8] = np.frombuffer(bytes.fromhex(iv), dtype=np.uint8).reshape(4, 4)
+
+        if data_string:
+            output_string: str = ""
+
+            for i in range(len(data_string) // 16):  # Decryption cycle
+                raw: NDArray[np.uint8] = np.array(   # Reads in input string 16 bytes at a time
+                    [ord(i) for i in data_string[(i * 16): ((i + 1) * 16)]], dtype=np.uint8).reshape(4, 4)
+
+                temp_array = cls.__dec_schedule(raw, keys)
+                result = np.bitwise_xor(temp_array, dec_array)
+                dec_array = raw
+
+                dec = "".join(cls.vec_chr(result.flatten().astype(np.uint8)))
+                output_string += dec
+
+            return output_string
+        else:
+            raise NotImplementedError
 
     @staticmethod
     def key_gen(length: int = 16) -> str:
