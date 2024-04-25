@@ -173,7 +173,7 @@ class AES:
             if running_mode == "ECB":
                 return self.__ecb_enc(data_string=data_string, keys=self.key_expand(key))
             elif running_mode == "CBC":
-                raise NotImplementedError("CBC running mode not implemented yet...")
+                return self.__cbc_enc(data_string=data_string, keys=self.key_expand(key), iv=iv)
             else:
                 raise NotImplementedError(f"{running_mode} is not supported!")
         else:
@@ -209,7 +209,7 @@ class AES:
             if running_mode == "ECB":
                 return self.__ecb_dec(data_string=data_string, keys=self.key_expand(key))
             elif running_mode == "CBC":
-                raise NotImplementedError("CBC running mode not implemented yet...")
+                return self.__cbc_dec(data_string=data_string, keys=self.key_expand(key), iv=iv)
             else:
                 raise NotImplementedError(f"{running_mode} is not supported!")
         else:
@@ -272,12 +272,12 @@ class AES:
             raise NotImplementedError
 
     @classmethod
-    def __cbc_enc(cls, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8]) -> str:
-        raise NotImplementedError
+    def __cbc_enc(cls, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8], iv: str) -> str:
+        raise NotImplementedError("CBC encryption not yet implemented...")
 
     @classmethod
-    def __cbc_dec(cls, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8]) -> str:
-        raise NotImplementedError
+    def __cbc_dec(cls, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8], iv: str) -> str:
+        raise NotImplementedError("CBC decryption not yet implemented...")
 
     @staticmethod
     def key_gen(length: int = 16) -> str:
