@@ -1,18 +1,25 @@
 import numpy as np
+import os
 from AES_Python import AES
 
-aes_test = AES(key="8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b")
+aes_test = AES(running_mode="CBC",
+               key="2b7e151628aed2a6abf7158809cf4f3c",
+               iv="000102030405060708090a0b0c0d0e0f"
+               )
 
-print(aes_test, "\n")
+data = b'\x1b\x16\x86:\xb9*w\xc5)"\xe4\xe9D\\\xf1\xee\x8b\x03\xcc\xe7\x0c~\xba7\xcf\x0f\x9c\x16dM$\xe9\x91\xef\xc3\xa6\xd2\xf0\xcd\xc2\xee\x86\xf0\x90\x8a]\x87\xf5R\xe2.c\xd4\xc6T\xdc\xe0#\xa7X\x8b_\x81\x04'
+file_name = "tmp.txt"
+expected = b'1234567890123456789012345678901234567890'
 
-data = '1234567890123456'
+with open(f"{file_name}.enc", "wb") as file:
+    file.write(data)
 
-print("Original data:", data)
+aes_test.dec(file_path=f"{file_name}.enc")
 
-enc_data = aes_test.enc(data_string=data)
+with open(f"{file_name}", "rb") as file:
+    result = file.read()
 
-print("Encrypted data:", enc_data)
+os.remove(f"{file_name}")
 
-dec_data = aes_test.dec(data_string=enc_data)
-
-print("Decrypted data:", dec_data)
+print("Result:", result)
+print("Expected:", expected)

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "AES_Python"
-version = "v1.5.4"
+version = "v1.5.5"
 description = "AES (Advanced Encryption Standard) implementation in Python-3"
 readme = "README.md"
 authors = [{name = "Gabriel Lindeblad", email = "Gabriel.Lindeblad@icloud.com"}]

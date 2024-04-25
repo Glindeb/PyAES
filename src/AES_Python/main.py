@@ -11,6 +11,8 @@ import galois  # Used for GF(2^8) multiplication in mix columns operation.
 from numpy.typing import NDArray  # Used for type hinting numpy arrays.
 from typing import Any  # Used for type hinting __getattr__ function.
 from secrets import token_bytes  # Used for generating random key if needed.
+from os.path import getsize  # Used to acquire size of files.
+from os import remove  # Used to remove files.
 
 
 class AES:
@@ -138,7 +140,7 @@ class AES:
         :param item: Attribute to be retrieved. Valid attributes (running_mode, key, iv).
         :return: Attribute value.
         """
-        if item:
+        if item in ["running_mode", "key", "iv"]:
             return self.__dict__[f"_{item}"]
         else:
             raise AttributeError(f"No attribute <{item}> exists!")
@@ -157,17 +159,17 @@ class AES:
         if not running_mode:
             running_mode = self._running_mode
         else:
-            self._running_mode = running_mode
+            self.set("running_mode", running_mode)
 
         if not key:
             key = self._key
         else:
-            self._key = key
+            self.set("key", key)
 
         if not iv:
             iv = self._iv
         else:
-            self._iv = iv
+            self.set("iv", iv)
 
         if data_string:
             if running_mode == "ECB":
@@ -176,8 +178,17 @@ class AES:
                 return self.__cbc_enc(data_string=data_string, keys=self.key_expand(key), iv=iv)
             else:
                 raise NotImplementedError(f"{running_mode} is not supported!")
+        elif file_path:
+            if running_mode == "ECB":
+                self.__ecb_enc(file_path=file_path, keys=self.key_expand(key))
+                return ""
+            elif running_mode == "CBC":
+                self.__cbc_enc(file_path=file_path, keys=self.key_expand(key), iv=iv)
+                return ""
+            else:
+                raise NotImplementedError(f"{running_mode} is not supported!")
         else:
-            raise NotImplementedError("File encryption is not implemented yet...")
+            raise RuntimeWarning("No file or string was give...")
 
     def dec(self, *, data_string: str = "", file_path: str = "",
             running_mode: str = "", key: str = "", iv: str = "") -> str:
@@ -193,17 +204,17 @@ class AES:
         if not running_mode:
             running_mode = self._running_mode
         else:
-            self._running_mode = running_mode
+            self.set("running_mode", running_mode)
 
         if not key:
             key = self._key
         else:
-            self._key = key
+            self.set("key", key)
 
         if not iv:
             iv = self._iv
         else:
-            self._iv = iv
+            self.set("iv", iv)
 
         if data_string:
             if running_mode == "ECB":
@@ -212,8 +223,17 @@ class AES:
                 return self.__cbc_dec(data_string=data_string, keys=self.key_expand(key), iv=iv)
             else:
                 raise NotImplementedError(f"{running_mode} is not supported!")
+        elif file_path:
+            if running_mode == "ECB":
+                self.__ecb_dec(file_path=file_path, keys=self.key_expand(key))
+                return ""
+            elif running_mode == "CBC":
+                self.__cbc_dec(file_path=file_path, keys=self.key_expand(key), iv=iv)
+                return ""
+            else:
+                raise NotImplementedError(f"{running_mode} is not supported!")
         else:
-            raise NotImplementedError("File encryption is not implemented yet...")
+            raise RuntimeWarning("No file or string was give...")
 
     @classmethod
     def __ecb_enc(cls, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8]) -> str:
@@ -234,7 +254,7 @@ class AES:
                 enc: str = "".join(cls.vec_chr(cls.__enc_schedule(raw, keys).flatten().astype(np.uint8)))
                 output_string += enc
 
-            extra = len(data_string) % 16   # Calculates length of final data block
+            extra = len(data_string) % 16  # Calculates length of final data block
             result: str = ""
 
             if extra != 0:  # If last data block not integer multiple of 16 adds extra padding
@@ -244,8 +264,33 @@ class AES:
                 result = "".join(cls.vec_chr(cls.__enc_schedule(raw.reshape(4, 4), keys).flatten().astype(np.uint8)))
 
             return output_string + result
+        elif file_path:
+            file_size = getsize(file_path)
+
+            with open(f"{file_path}.enc", 'wb') as output, open(file_path, 'rb') as data:
+                for i in range(int(file_size / 16)):
+                    raw = np.array([i for i in data.read(16)], dtype=np.uint8).reshape(4, 4)
+                    out = bytes((cls.__enc_schedule(raw, keys).flatten()).tolist())
+                    output.write(out)
+
+                if file_size % 16 != 0:
+                    raw_l = [i for i in data.read()]
+                    raw_l, length = cls.__add_padding(raw_l)
+
+                    out = bytes((cls.__enc_schedule(np.array(raw_l).reshape(4, 4), keys).flatten()).tolist())
+                    identifier = bytes((cls.__enc_schedule(np.array([0 for i in range(15)] + [length]).reshape(4, 4),
+                                                           keys).flatten()).tolist())
+
+                    output.write(out + identifier)
+                else:
+                    identifier = bytes((cls.__enc_schedule(np.array([0 for i in range(16)]).reshape(4, 4),
+                                                           keys).flatten()).tolist())
+                    output.write(identifier)
+
+            remove(file_path)
+            return ""
         else:
-            raise NotImplementedError
+            raise RuntimeError("No string or file path received...?")
 
     @classmethod
     def __ecb_dec(cls, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8]) -> str:
@@ -268,16 +313,161 @@ class AES:
                 output_string += dec
 
             return output_string
+        elif file_path:
+            file_size = getsize(file_path)
+            file_name = file_path[:-4]
+
+            with open(f"{file_name}", 'wb') as output, open(file_path, 'rb') as data:
+                for i in range(int(file_size / 16) - 2):
+                    raw = np.array([i for i in data.read(16)]).reshape(4, 4)
+                    result = bytes((cls.__dec_schedule(raw, keys).flatten()).tolist())
+                    output.write(result)
+
+                data_final = np.array([i for i in data.read(16)]).reshape(4, 4)
+                identifier = np.array([i for i in data.read()]).reshape(4, 4)
+
+                data_dec = (cls.__dec_schedule(data_final, keys).flatten()).tolist()
+                id_l = (cls.__dec_schedule(identifier, keys).flatten()).tolist()
+
+                result = bytes(cls.__remove_padding(data_dec, id_l))
+
+                output.write(result)
+
+            remove(file_path)
+            return ""
         else:
-            raise NotImplementedError
+            raise RuntimeError("No string or file path received...?")
 
     @classmethod
     def __cbc_enc(cls, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8], iv: str) -> str:
-        raise NotImplementedError("CBC encryption not yet implemented...")
+        """
+        Preforms CBC encryption instructions on specified file or data string.
+        :param data_string: Data string to be encrypted.
+        :param file_path: Path to file that is encrypted.
+        :param keys: Key used for encryption.
+        :param iv: Initialization vector used.
+        :return: Data string or writes encrypted file.
+        """
+        enc_array: NDArray[np.uint8] = np.frombuffer(bytes.fromhex(iv), dtype=np.uint8).reshape(4, 4)
+
+        if data_string:
+            output_string: str = ""
+
+            for i in range(len(data_string) // 16):  # Encryption cycle, skips last if not integer multiple of 16 bytes
+                raw: NDArray[np.uint8] = np.array([ord(i) for i in data_string[(i * 16): ((i + 1) * 16)]],
+                                                  dtype=np.uint8).reshape(4, 4)
+                enc = np.bitwise_xor(raw, enc_array)  # Xor operation with previous encrypted block or iv
+                enc_array = cls.__enc_schedule(enc, keys)
+                output_string += "".join(cls.vec_chr(enc_array.flatten().astype(np.uint8)))
+
+            extra = len(data_string) % 16  # Calculates length of final data block
+            result: str = ""
+
+            if extra != 0:  # If last data block not integer multiple of 16 adds extra padding
+                raw = np.full(16, 0, dtype=np.uint8)
+                raw[:extra] = np.array([ord(i) for i in data_string][-1 * extra:], dtype=np.uint8)
+                raw = raw.reshape(4, 4)
+
+                temp_array = np.bitwise_xor(raw, enc_array)  # Xor operation with previous encrypted block
+
+                result = "".join(cls.vec_chr(cls.__enc_schedule(temp_array, keys).flatten().astype(np.uint8)))
+
+            return output_string + result
+        elif file_path:
+            file_size = getsize(file_path)
+
+            with open(f"{file_path}.enc", 'wb') as output, open(file_path, 'rb') as data:
+                for i in range(int(file_size / 16)):
+                    raw = np.array([i for i in data.read(16)]).reshape(4, 4)
+                    raw = np.bitwise_xor(raw, enc_array)
+                    enc_array = cls.__enc_schedule(raw, keys)
+                    output.write(bytes((enc_array.flatten()).tolist()))
+
+                if file_size % 16 != 0:
+                    final = [i for i in data.read()]
+                    final, length = cls.__add_padding(final)
+
+                    raw = np.bitwise_xor(np.array(final).reshape(4, 4), enc_array)
+                    enc_array = cls.__enc_schedule(raw, keys)
+
+                    identifier = np.bitwise_xor(np.array([0 for i in range(15)] + [length]).reshape(4, 4), enc_array)
+                    identifier = cls.__enc_schedule(identifier, keys)
+
+                    output.write(bytes((enc_array.flatten()).tolist() + (identifier.flatten()).tolist()))
+                else:
+                    identifier = np.bitwise_xor(np.array([0 for i in range(16)]).reshape(4, 4), enc_array)
+                    id_bytes = bytes(((cls.__enc_schedule(identifier, keys)).flatten()).tolist())
+                    output.write(id_bytes)
+            remove(file_path)
+            return ""
+        else:
+            raise RuntimeError("No string or file path received...?")
 
     @classmethod
     def __cbc_dec(cls, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8], iv: str) -> str:
-        raise NotImplementedError("CBC decryption not yet implemented...")
+        """
+        Preforms CBC decryption instructions on specified file or data string.
+        :param data_string: Data string to be decrypted.
+        :param file_path: Path to file that is decrypted.
+        :param keys: Key used for decryption.
+        :param iv: Initialization vector used.
+        :return: Data string or writes decrypted file.
+        """
+        dec_array: NDArray[np.uint8] = np.frombuffer(bytes.fromhex(iv), dtype=np.uint8).reshape(4, 4)
+
+        if data_string:
+            output_string: str = ""
+
+            for i in range(len(data_string) // 16):  # Decryption cycle
+                raw: NDArray[np.uint8] = np.array(  # Reads in input string 16 bytes at a time
+                    [ord(i) for i in data_string[(i * 16): ((i + 1) * 16)]], dtype=np.uint8).reshape(4, 4)
+
+                temp_array = cls.__dec_schedule(raw, keys)
+                result = np.bitwise_xor(temp_array, dec_array)
+                dec_array = raw
+
+                dec = "".join(cls.vec_chr(result.flatten().astype(np.uint8)))
+                output_string += dec
+
+            return output_string
+        elif file_path:
+            file_size = getsize(file_path)
+            file_name = file_path[:-4]
+
+            with open(f"{file_name}", 'wb') as output, open(file_path, 'rb') as data:
+                if int(file_size / 16) - 3 >= 0:
+                    vector = np.array([i for i in data.read(16)]).reshape(4, 4)
+                    raw = cls.__dec_schedule(vector, keys)
+                    result = np.bitwise_xor(raw, dec_array)
+                    output.write(bytes((result.flatten()).tolist()))
+
+                    for i in range(int(file_size / 16) - 3):
+                        raw = np.array([i for i in data.read(16)]).reshape(4, 4)
+                        result = cls.__dec_schedule(raw, keys)
+                        result = np.bitwise_xor(result, vector)
+                        vector = raw
+                        output.write(bytes((result.flatten()).tolist()))
+                else:
+                    vector = dec_array
+
+                data_pice = np.array([i for i in data.read(16)]).reshape(4, 4)
+                vector_1, identifier = data_pice, np.array([i for i in data.read()]).reshape(4, 4)
+
+                result = cls.__dec_schedule(data_pice, keys)
+                identifier = cls.__dec_schedule(identifier, keys)
+
+                identifier = np.bitwise_xor(identifier, vector_1)
+                data_pice = np.bitwise_xor(result, vector)
+
+                result_bytes = bytes(cls.__remove_padding((data_pice.flatten()).tolist(),
+                                                          (identifier.flatten()).tolist()))
+
+                output.write(result_bytes)
+
+            remove(file_path)
+            return ""
+        else:
+            raise RuntimeError("No string or file path received...?")
 
     @staticmethod
     def key_gen(length: int = 16) -> str:
@@ -473,3 +663,21 @@ class AES:
                 result[j, i] = temp
 
         return result.transpose()
+
+    @staticmethod
+    def __add_padding(data: list[int]) -> tuple[list[int], int]:
+        """Adds a padding to ensure a bloke size of 16 bytes."""
+        length = 16 - len(data)
+        for i in range(length):
+            data.append(0)
+        return data, length
+
+    @staticmethod
+    def __remove_padding(data: list[int], identifier: list[int]) -> list[int]:
+        """Removes the padding from the data using information from identifier."""
+        if identifier[-1] == 0:
+            return data
+        elif 0 < identifier[-1] < 16:
+            return data[:-identifier[-1]]
+        else:
+            raise ValueError('Invalid padding')
