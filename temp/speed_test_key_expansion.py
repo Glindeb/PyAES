@@ -1,9 +1,7 @@
 import sys
 from time import time
 from typing import Callable
-
-sys.path.append('../')
-from src.AES import AES
+from AES_Python import AES
 
 
 def timeit(func: Callable[[], float]) -> Callable[[], None]:

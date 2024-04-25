@@ -76,7 +76,7 @@ class AES:
     ])
 
     # Vectorize built-in chr() function
-    vec_chr = np.vectorize(chr)
+    _vec_chr = np.vectorize(chr)
 
     def __init__(self, *, running_mode: str = "ECB", version: str = "128", key: str = "", iv: str = "") -> None:
         """
@@ -251,7 +251,7 @@ class AES:
                 raw: NDArray[np.uint8] = np.array([ord(i) for i in data_string[(i * 16): ((i + 1) * 16)]],
                                                   dtype=np.uint8).reshape(4, 4)
 
-                enc: str = "".join(cls.vec_chr(cls.__enc_schedule(raw, keys).flatten().astype(np.uint8)))
+                enc: str = "".join(cls._vec_chr(cls.__enc_schedule(raw, keys).flatten().astype(np.uint8)))
                 output_string += enc
 
             extra = len(data_string) % 16  # Calculates length of final data block
@@ -261,7 +261,7 @@ class AES:
                 raw = np.full(16, 0, dtype=np.uint8)
                 raw[:extra] = np.array([ord(i) for i in data_string][-1 * extra:], dtype=np.uint8)
 
-                result = "".join(cls.vec_chr(cls.__enc_schedule(raw.reshape(4, 4), keys).flatten().astype(np.uint8)))
+                result = "".join(cls._vec_chr(cls.__enc_schedule(raw.reshape(4, 4), keys).flatten().astype(np.uint8)))
 
             return output_string + result
         elif file_path:
@@ -308,7 +308,7 @@ class AES:
                 raw: NDArray[np.uint8] = np.array(
                     [ord(i) for i in data_string[(i * 16): ((i + 1) * 16)]], dtype=np.uint8).reshape(4, 4)
 
-                dec: str = "".join(cls.vec_chr(cls.__dec_schedule(raw, keys).flatten().astype(np.uint8)))
+                dec: str = "".join(cls._vec_chr(cls.__dec_schedule(raw, keys).flatten().astype(np.uint8)))
 
                 output_string += dec
 
@@ -358,7 +358,7 @@ class AES:
                                                   dtype=np.uint8).reshape(4, 4)
                 enc = np.bitwise_xor(raw, enc_array)  # Xor operation with previous encrypted block or iv
                 enc_array = cls.__enc_schedule(enc, keys)
-                output_string += "".join(cls.vec_chr(enc_array.flatten().astype(np.uint8)))
+                output_string += "".join(cls._vec_chr(enc_array.flatten().astype(np.uint8)))
 
             extra = len(data_string) % 16  # Calculates length of final data block
             result: str = ""
@@ -370,7 +370,7 @@ class AES:
 
                 temp_array = np.bitwise_xor(raw, enc_array)  # Xor operation with previous encrypted block
 
-                result = "".join(cls.vec_chr(cls.__enc_schedule(temp_array, keys).flatten().astype(np.uint8)))
+                result = "".join(cls._vec_chr(cls.__enc_schedule(temp_array, keys).flatten().astype(np.uint8)))
 
             return output_string + result
         elif file_path:
@@ -426,7 +426,7 @@ class AES:
                 result = np.bitwise_xor(temp_array, dec_array)
                 dec_array = raw
 
-                dec = "".join(cls.vec_chr(result.flatten().astype(np.uint8)))
+                dec = "".join(cls._vec_chr(result.flatten().astype(np.uint8)))
                 output_string += dec
 
             return output_string
@@ -450,16 +450,16 @@ class AES:
                 else:
                     vector = dec_array
 
-                data_pice = np.array([i for i in data.read(16)]).reshape(4, 4)
-                vector_1, identifier = data_pice, np.array([i for i in data.read()]).reshape(4, 4)
+                data_piece = np.array([i for i in data.read(16)]).reshape(4, 4)
+                vector_1, identifier = data_piece, np.array([i for i in data.read()]).reshape(4, 4)
 
-                result = cls.__dec_schedule(data_pice, keys)
+                result = cls.__dec_schedule(data_piece, keys)
                 identifier = cls.__dec_schedule(identifier, keys)
 
                 identifier = np.bitwise_xor(identifier, vector_1)
-                data_pice = np.bitwise_xor(result, vector)
+                data_piece = np.bitwise_xor(result, vector)
 
-                result_bytes = bytes(cls.__remove_padding((data_pice.flatten()).tolist(),
+                result_bytes = bytes(cls.__remove_padding((data_piece.flatten()).tolist(),
                                                           (identifier.flatten()).tolist()))
 
                 output.write(result_bytes)
