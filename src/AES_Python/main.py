@@ -1,7 +1,9 @@
-"""This is a simple AES (Advanced Encryption Standard) implementation in Python 3.12. This
+"""
+This is a simple AES (Advanced Encryption Standard) implementation in Python 3.12. This
 implementation is designed to be used as an educational tool only. It is not intended to
 be used in any other use case than educational and no security is guaranteed for data
-encrypted or decrypted using this tool."""
+encrypted or decrypted using this tool.
+"""
 
 # Imported libraries
 import numpy as np  # Used for arrays and mathematical operations.
@@ -18,10 +20,13 @@ class AES:
 
     Attributes:
         version (str): The version of the encryption, either 128, 192 or 256 bit.
-        running_mode (str): The running mode for AES. Default is "ECB".
-        key (str): The encryption key. If not provided, a random key is generated.
+        _running_mode (str): The running mode for AES. Default is "ECB".
+        _key (str): The encryption key. If not provided, a random key is generated.
+        _iv (str): The initialization vector used for "CBC" encryption.
 
     Methods:
+        get: Retrieves the value of specified attribute.
+        set: Changes the value of specified attribute.
         enc: Encrypts either a string of unspecified length or a file.
         dec: Decrypts string or file.
         key_gen: Generates a random byte string of specified length (16, 24 or 32 bytes) in hexadecimal.
@@ -81,126 +86,184 @@ class AES:
         :return: None.
         """
         if key:
-            self.key: str = key
+            self._key: str = key
         else:
-            self.key = str(self.key_gen(int(version) // 8))  # Generates key if missing
+            self._key = str(self.key_gen(int(version) // 8))  # Generates key if missing
 
         if iv:
-            self.iv = iv
+            self._iv = iv
         else:
-            self.iv = str(self.key_gen())  # Generates iv if missing
+            self._iv = str(self.key_gen())  # Generates iv if missing
 
-        self.running_mode: str = running_mode
+        self._running_mode: str = running_mode
 
-    def __setattr__(self, attr, value) -> None:
+    def __repr__(self) -> str:
+        """
+        Returns string with information about running_mode, key and iv of object.
+        :return: Information string.
+        """
+        return (f"Object <{type(self).__name__}>. \n"
+                f" - Running mode = '{self._running_mode}' \n"
+                f" - Key = '{self._key}' \n"
+                f" - IV = '{self._iv}' ")
+
+    def set(self, attr: str, value: str) -> None:
+        """
+        Preforms check of attribute and new value before allowing assignment.
+        :param attr: Attribute to be changed. Valid attributes (running_mode, key, iv).
+        :param value: New attribute value.
+        :return: None.
+        """
         if attr == "key":
             if isinstance(value, str) and ((len(value) / 2) in [16, 24, 32]):
-                self.__dict__[attr] = value
+                self.__dict__[f"_{attr}"] = value
             else:
                 raise TypeError("Unsupported key length, supported types are (16, 24, 32) bytes.")
         elif attr == "iv":
             if isinstance(value, str) and ((len(value) / 2) == 16):
-                self.__dict__[attr] = value
+                self.__dict__[f"_{attr}"] = value
             else:
                 raise TypeError("Unsupported iv length, supported length is 16 bytes.")
         elif attr == "running_mode":
             if isinstance(value, str) and value in ["ECB", "CBC"]:
-                self.__dict__[attr] = value
+                self.__dict__[f"_{attr}"] = value
             else:
                 raise TypeError("Unsupported running mode, supported modes are ECB, CBC.")
         else:
             raise AttributeError(f"No changeable attribute <{attr}> exists!")
 
-    def __getattr__(self, item) -> Any:
-        if item in ["key", "iv", "running_mode"]:
-            return self.__dict__[item]
+    def get(self, item: str) -> Any:
+        """
+        Preforms check before retrieving attribute.
+        :param item: Attribute to be retrieved. Valid attributes (running_mode, key, iv).
+        :return: Attribute value.
+        """
+        if item:
+            return self.__dict__[f"_{item}"]
         else:
             raise AttributeError(f"No attribute <{item}> exists!")
 
-    def __delattr__(self, item):
-        raise PermissionError(f"You can not delete the attribute <{item}>")
-
-    def __repr__(self) -> str:
-        return (f"Object <{type(self).__name__}>. \n"
-                f" - Running mode = '{self.running_mode}' \n"
-                f" - Key = '{self.key}' \n"
-                f" - IV = '{self.iv}' ")
-
     def enc(self, *, data_string: str = "", file_path: str = "",
-            running_mode: str = "", key: str = "", iv: str = "") -> str | None:
+            running_mode: str = "", key: str = "", iv: str = "") -> str:
+        """
+        Encrypts either a string or a file using selected running_mode, key and iv.
+        :param data_string: Data string to be encrypted.
+        :param file_path: Path to file that is encrypted.
+        :param running_mode: Running mode used for encryption.
+        :param key: Key used for encryption.
+        :param iv: Initialization vector used for CBC encryption.
+        :return: Data string or writes encrypted file.
+        """
         if not running_mode:
-            running_mode = self.running_mode
+            running_mode = self._running_mode
+        else:
+            self._running_mode = running_mode
 
         if not key:
-            key = self.key
+            key = self._key
+        else:
+            self._key = key
 
         if not iv:
-            iv = self.iv
+            iv = self._iv
+        else:
+            self._iv = iv
 
         if data_string:
             if running_mode == "ECB":
                 return self.__ecb_enc(data_string=data_string, keys=self.key_expand(key))
             elif running_mode == "CBC":
-                raise NotImplementedError
+                raise NotImplementedError("CBC running mode not implemented yet...")
             else:
-                raise NotImplementedError
+                raise NotImplementedError(f"{running_mode} is not supported!")
         else:
-            raise NotImplementedError
+            raise NotImplementedError("File encryption is not implemented yet...")
 
     def dec(self, *, data_string: str = "", file_path: str = "",
-            running_mode: str = "", key: str = "", iv: str = "") -> str | None:
+            running_mode: str = "", key: str = "", iv: str = "") -> str:
+        """
+        Decrypts either a string or a file using selected running_mode, key and iv.
+        :param data_string: Data string to be decrypted.
+        :param file_path: Path to file that is decrypted.
+        :param running_mode: Running mode used for decryption.
+        :param key: Key used for decryption.
+        :param iv: Initialization vector used for CBC decryption.
+        :return: Data string or writes decrypted file.
+        """
         if not running_mode:
-            running_mode = self.running_mode
+            running_mode = self._running_mode
+        else:
+            self._running_mode = running_mode
 
         if not key:
-            key = self.key
+            key = self._key
+        else:
+            self._key = key
 
         if not iv:
-            iv = self.iv
+            iv = self._iv
+        else:
+            self._iv = iv
 
         if data_string:
             if running_mode == "ECB":
                 return self.__ecb_dec(data_string=data_string, keys=self.key_expand(key))
             elif running_mode == "CBC":
-                raise NotImplementedError
+                raise NotImplementedError("CBC running mode not implemented yet...")
             else:
-                raise NotImplementedError
+                raise NotImplementedError(f"{running_mode} is not supported!")
         else:
-            raise NotImplementedError
+            raise NotImplementedError("File encryption is not implemented yet...")
 
-    def __ecb_enc(self, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8]) -> str | None:
+    @classmethod
+    def __ecb_enc(cls, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8]) -> str:
+        """
+        Preforms ECB encryption instructions on specified file or data string.
+        :param data_string: Data string to be encrypted.
+        :param file_path: Path to file that is encrypted.
+        :param keys: Key used for encryption.
+        :return: Data string or writes encrypted file.
+        """
         if data_string:
             output_string: str = ""
 
-            for i in range(len(data_string) // 16):
+            for i in range(len(data_string) // 16):  # Encryption cycle, skips last if not integer multiple of 16 bytes
                 raw: NDArray[np.uint8] = np.array([ord(i) for i in data_string[(i * 16): ((i + 1) * 16)]],
                                                   dtype=np.uint8).reshape(4, 4)
 
-                enc: str = "".join(self.vec_chr(self.__enc_schedule(raw, keys).flatten().astype(np.uint8)))
+                enc: str = "".join(cls.vec_chr(cls.__enc_schedule(raw, keys).flatten().astype(np.uint8)))
                 output_string += enc
 
-            extra = len(data_string) % 16
+            extra = len(data_string) % 16   # Calculates length of final data block
             result: str = ""
 
-            if extra != 0:
+            if extra != 0:  # If last data block not integer multiple of 16 adds extra padding
                 raw = np.full(16, 0, dtype=np.uint8)
                 raw[:extra] = np.array([ord(i) for i in data_string][-1 * extra:], dtype=np.uint8)
 
-                result = "".join(self.vec_chr(self.__enc_schedule(raw.reshape(4, 4), keys).flatten().astype(np.uint8)))
+                result = "".join(cls.vec_chr(cls.__enc_schedule(raw.reshape(4, 4), keys).flatten().astype(np.uint8)))
 
             return output_string + result
         else:
             raise NotImplementedError
 
-    def __ecb_dec(self, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8]) -> str | None:
+    @classmethod
+    def __ecb_dec(cls, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8]) -> str:
+        """
+        Preforms ECB decryption instructions on specified file or data string.
+        :param data_string: Data string to be decrypted.
+        :param file_path: Path to file that is decrypted.
+        :param keys: Key used for decryption.
+        :return: Data string or writes decrypted file.
+        """
         if data_string:
             output_string: str = ""
 
-            for i in range(len(data_string) // 16):
+            for i in range(len(data_string) // 16):  # Decryption cycle
                 raw: NDArray[np.uint8] = np.array(
                     [ord(i) for i in data_string[(i * 16): ((i + 1) * 16)]], dtype=np.uint8).reshape(4, 4)
 
-                dec: str = "".join(self.vec_chr(self.__dec_schedule(raw, keys).flatten().astype(np.uint8)))
+                dec: str = "".join(cls.vec_chr(cls.__dec_schedule(raw, keys).flatten().astype(np.uint8)))
 
                 output_string += dec
 
@@ -208,11 +271,13 @@ class AES:
         else:
             raise NotImplementedError
 
-    def __cbc_enc(self, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8]) -> str | None:
+    @classmethod
+    def __cbc_enc(cls, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8]) -> str:
         raise NotImplementedError
 
-    def __cbc_dec(self, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8]) -> str | None:
-        raise  NotImplementedError
+    @classmethod
+    def __cbc_dec(cls, *, data_string: str = "", file_path: str = "", keys: NDArray[np.uint8]) -> str:
+        raise NotImplementedError
 
     @staticmethod
     def key_gen(length: int = 16) -> str:

@@ -65,4 +65,4 @@ def test_enc_schedule(data, key: str, expected: str) -> None:
 def test_enc_ecb(data, key, expected):
     aes = AES(key=key)
 
-    assert bytes(aes.enc(data_string=data), "utf-8") == expected    # type: ignore
+    assert bytes(aes.enc(data_string=data), "utf-8") == expected
