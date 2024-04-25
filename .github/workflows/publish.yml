@@ -116,9 +116,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE }}
         run: >-
           gh release create
-          '${{ github.ref_name }}'
+          'v1.3.5'
           --repo '${{ github.repository }}'
-          --notes ""
+          --generate-notes
       - name: Upload artifact signatures to GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE }}
