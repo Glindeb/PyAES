@@ -1,22 +1,18 @@
 import numpy as np
-import sys
-sys.path.append('../')
+from AES_Python import AES
 
-A = "6bc1bee22e409f96e93d7e117393172a"
+aes_test = AES(key="8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b")
 
-print(A)
+print(aes_test, "\n")
 
-B = np.frombuffer(bytes.fromhex(A), dtype=np.uint8).reshape(4, 4)
+data = '1234567890123456'
 
-print(B)
+print("Original data:", data)
 
-print(B.astype(np.int8).tobytes().hex())
+enc_data = aes_test.enc(data_string=data)
 
-C = np.array([[2, 3, 1, 1],  # Matrix used for shift columns operation
-                                         [1, 2, 3, 1],
-                                         [1, 1, 2, 3],
-                                         [3, 1, 1, 2]])
+print("Encrypted data:", enc_data)
 
-print(C)
-C.transpose()
-print(C)
+dec_data = aes_test.dec(data_string=enc_data)
+
+print("Decrypted data:", dec_data)
