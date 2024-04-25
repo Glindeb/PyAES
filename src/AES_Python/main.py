@@ -4,7 +4,6 @@ implementation is designed to be used as an educational tool only. It is not int
 be used in any other use case than educational and no security is guaranteed for data
 encrypted or decrypted using this tool.
 """
-import os
 
 # Imported libraries
 import numpy as np  # Used for arrays and mathematical operations.
