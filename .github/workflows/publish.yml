@@ -116,7 +116,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE }}
         run: >-
           gh release create
-          'v1.5.5'
+          'v1.5.6'
           --repo '${{ github.repository }}'
           --generate-notes
       - name: Upload artifact signatures to GitHub Release
@@ -127,5 +127,5 @@ jobs:
         # sigstore-produced signatures and certificates.
         run: >-
           gh release upload
-          'v1.5.5' dist/**
+          'v1.5.6' dist/**
           --repo '${{ github.repository }}'
