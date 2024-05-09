@@ -20,13 +20,13 @@ def timeit(func: Callable[[], None]) -> Callable[[], None]:
 @timeit
 def custom_enc() -> None:
     aes = AES(running_mode="CBC", key="2b7e151628aed2a6abf7158809cf4f3c", iv="000102030405060708090a0b0c0d0e0f")
-    print(aes.enc(data_string=long_string))
+    aes.enc(data_string=long_string)
 
 
 @timeit
 def custom_dec() -> None:
     aes = AES(running_mode="CBC", key="2b7e151628aed2a6abf7158809cf4f3c", iv="000102030405060708090a0b0c0d0e0f")
-    print(aes.dec(data_string=encrypted_string))
+    aes.dec(data_string=encrypted_string)
 
 
 def main():

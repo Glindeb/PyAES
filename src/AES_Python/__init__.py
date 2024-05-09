@@ -10,6 +10,6 @@ __license__ = 'MIT'
 __email__ = 'gabriel.lindeblad@icloud.com'
 __status__ = 'Development'
 __date__ = '2024-04-25'
-__description__ = 'AES (Advanced Encryption Standard) implementation in Python-3.12'
+__description__ = 'AES (Advanced Encryption Standard) implementation in Python'
 __platforms__ = 'Windows, Linux, MacOS'
 __all__ = ['AES']
