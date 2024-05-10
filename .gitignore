@@ -23,7 +23,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
+src/AES_Python/build/
 develop-eggs/
 dist/
 downloads/
@@ -175,3 +175,5 @@ cython_debug/
 #.idea/
 
 !/docs/Report/_minted-Main/
+!/src/AES_Python/mypyc_test_speed_test_encryption.py
+mypyc_test_speed_test_encryption.py

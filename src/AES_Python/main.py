@@ -9,7 +9,7 @@ security is guaranteed for data encrypted or decrypted using this tool.
 import numpy as np  # Used for arrays and mathematical operations.
 import galois  # Used for GF(2^8) multiplication in mix columns operation.
 from numpy.typing import NDArray  # Used for type hinting numpy arrays.
-from typing import Any  # Used for type hinting __getattr__ function.
+from typing import Any, Callable  # Used for type hinting __getattr__ function.
 from secrets import token_bytes  # Used for generating random key if needed.
 from os.path import getsize  # Used to acquire size of files.
 from os import remove  # Used to remove files.
@@ -89,7 +89,7 @@ class AES:
     ])
 
     # Vectorize built-in chr() function
-    _vec_chr = np.vectorize(chr)
+    _vec_chr: Callable[[NDArray[np.uint8]], list[str]] = np.vectorize(chr)
 
     def __init__(self, *, running_mode: str = "ECB",
                  version: str = "128", key: str = "", iv: str = "") -> None:
@@ -101,17 +101,22 @@ class AES:
         :param iv: Initialization vector used during CBC running mode.
         :return: None.
         """
+        # Initialise private variables
+        self._key: str = ""
+        self._iv: str = ""
+        self._running_mode: str = ""
+
         if key:
-            self._key: str = key
+            self.set(key=key)
         else:   # Generates key if missing
-            self._key = str(self.key_gen(int(version) // 8))
+            self.set(key=str(self.key_gen(int(version) // 8)))
 
         if iv:
-            self._iv = iv
-        else:
-            self._iv = str(self.key_gen())  # Generates iv if missing
+            self.set(iv=iv)
+        else:   # Generates iv if missing
+            self.set(iv=str(self.key_gen()))
 
-        self._running_mode: str = running_mode
+        self.set(running_mode=running_mode)
 
     def __repr__(self) -> str:
         """
@@ -119,37 +124,39 @@ class AES:
         :return: Information string.
         """
         return (f"Object <{type(self).__name__}>. \n"
-                f" - Running mode = '{self._running_mode}' \n"
-                f" - Key = '{self._key}' \n"
-                f" - IV = '{self._iv}' ")
+                f"\t- Running mode = '{self._running_mode}' \n"
+                f"\t- Key = '{self._key}' \n"
+                f"\t- IV = '{self._iv}' ")
 
-    def set(self, attr: str, value: str) -> None:
+    def set(self, *, key: str = "",
+            iv: str = "", running_mode: str = "") -> None:
         """
         Preforms check of attribute and new value before allowing assignment.
-        :param attr: Attribute changed. Valid attr: running_mode, key, iv.
-        :param value: New attribute value.
+        :param key: New encryption and decryption key.
+        :param iv: New iv.
+        :param running_mode: New running mode.
         :return: None.
         """
-        if attr == "key":
-            if isinstance(value, str) and ((len(value) / 2) in [16, 24, 32]):
-                self.__dict__[f"_{attr}"] = value
+        if key:
+            if isinstance(key, str) and ((len(key) / 2) in [16, 24, 32]):
+                self._key = key
             else:
-                raise TypeError("Unsupported key length, supported types are"
-                                "(16, 24, 32) bytes.")
-        elif attr == "iv":
-            if isinstance(value, str) and ((len(value) / 2) == 16):
-                self.__dict__[f"_{attr}"] = value
+                raise TypeError("Unsupported key length or type, supported"
+                                "types are (16, 24, 32) byte strings.")
+
+        if iv:
+            if isinstance(iv, str) and ((len(iv) / 2) == 16):
+                self._iv = iv
             else:
-                raise TypeError("Unsupported iv length, supported length is"
-                                "16 bytes.")
-        elif attr == "running_mode":
-            if isinstance(value, str) and value in ["ECB", "CBC"]:
-                self.__dict__[f"_{attr}"] = value
+                raise TypeError("Unsupported iv length or type, supported"
+                                "length is 16 byte string.")
+
+        if running_mode:
+            if isinstance(running_mode, str) and running_mode in ["ECB", "CBC"]:
+                self._running_mode = running_mode
             else:
-                raise TypeError("Unsupported running mode, supported modes are"
-                                "ECB, CBC.")
-        else:
-            raise AttributeError(f"No changeable attribute <{attr}> exists!")
+                raise TypeError("Unsupported running mode or type, supported"
+                                "modes are ECB, CBC.")
 
     def get(self, item: str) -> Any:
         """
@@ -162,106 +169,46 @@ class AES:
         else:
             raise AttributeError(f"No attribute <{item}> exists!")
 
-    def enc(self, *, data_string: str = "", file_path: str = "",
-            running_mode: str = "", key: str = "", iv: str = "") -> str:
+    def enc(self, *, data_string: str = "", file_path: str = "") -> str | None:
         """
         Encrypts a string or a file using selected running_mode, key and iv.
         :param data_string: Data string to be encrypted.
         :param file_path: Path to file that is encrypted.
-        :param running_mode: Running mode used for encryption.
-        :param key: Key used for encryption.
-        :param iv: Initialization vector used for CBC encryption.
         :return: Data string or writes encrypted file.
         """
-        if not running_mode:
-            running_mode = self._running_mode
-        else:
-            self.set("running_mode", running_mode)
 
-        if not key:
-            key = self._key
-        else:
-            self.set("key", key)
-
-        if not iv:
-            iv = self._iv
-        else:
-            self.set("iv", iv)
-
-        if data_string:
-            if running_mode == "ECB":
-                return self.__ecb_enc(data_string=data_string,
-                                      keys=self.key_expand(key))
-            elif running_mode == "CBC":
-                return self.__cbc_enc(data_string=data_string,
-                                      keys=self.key_expand(key), iv=iv)
-            else:
-                raise NotImplementedError(f"{running_mode} is not supported!")
-        elif file_path:
-            if running_mode == "ECB":
-                self.__ecb_enc(file_path=file_path,
-                               keys=self.key_expand(key))
-                return ""
-            elif running_mode == "CBC":
-                self.__cbc_enc(file_path=file_path,
-                               keys=self.key_expand(key),
-                               iv=iv)
-                return ""
-            else:
-                raise NotImplementedError(f"{running_mode} is not supported!")
-        else:
+        if not (data_string == "" or file_path == ""):
             raise RuntimeWarning("No file or string was give...")
+        elif self._running_mode == "ECB":
+            return self.__ecb_enc(data_string=data_string,
+                                  file_path=file_path,
+                                  keys=self.key_expand(self._key))
+        elif self._running_mode == "CBC":
+            return self.__cbc_enc(data_string=data_string,
+                                  file_path=file_path,
+                                  keys=self.key_expand(self._key),
+                                  iv=self._iv)
+        return None
 
-    def dec(self, *, data_string: str = "", file_path: str = "",
-            running_mode: str = "", key: str = "", iv: str = "") -> str:
+    def dec(self, *, data_string: str = "", file_path: str = "") -> str | None:
         """
         Decrypts a string or a file using selected running_mode, key and iv.
         :param data_string: Data string to be decrypted.
         :param file_path: Path to file that is decrypted.
-        :param running_mode: Running mode used for decryption.
-        :param key: Key used for decryption.
-        :param iv: Initialization vector used for CBC decryption.
         :return: Data string or writes decrypted file.
         """
-        if not running_mode:
-            running_mode = self._running_mode
-        else:
-            self.set("running_mode", running_mode)
-
-        if not key:
-            key = self._key
-        else:
-            self.set("key", key)
-
-        if not iv:
-            iv = self._iv
-        else:
-            self.set("iv", iv)
-
-        if data_string:
-            if running_mode == "ECB":
-                return self.__ecb_dec(data_string=data_string,
-                                      keys=self.key_expand(key))
-            elif running_mode == "CBC":
-                return self.__cbc_dec(data_string=data_string,
-                                      keys=self.key_expand(key),
-                                      iv=iv)
-            else:
-                raise NotImplementedError(f"{running_mode} is not supported!")
-        elif file_path:
-            if running_mode == "ECB":
-                self.__ecb_dec(file_path=file_path,
-                               keys=self.key_expand(key))
-                return ""
-            elif running_mode == "CBC":
-                self.__cbc_dec(file_path=file_path,
-                               keys=self.key_expand(key),
-                               iv=iv)
-                return ""
-            else:
-                raise NotImplementedError(f"{running_mode} is not supported!")
-        else:
+        if not (data_string == "" or file_path == ""):
             raise RuntimeWarning("No file or string was give...")
+        elif self._running_mode == "ECB":
+            return self.__ecb_dec(data_string=data_string,
+                                  file_path=file_path,
+                                  keys=self.key_expand(self._key))
+        elif self._running_mode == "CBC":
+            return self.__cbc_dec(data_string=data_string,
+                                  file_path=file_path,
+                                  keys=self.key_expand(self._key),
+                                  iv=self._iv)
+        return None
 
     @classmethod
     def __ecb_enc(cls, *, data_string: str = "",
