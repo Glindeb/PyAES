@@ -1,4 +1,3 @@
-import sys
 from time import time
 from typing import Callable
 from AES_Python import AES

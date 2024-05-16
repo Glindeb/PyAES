@@ -1,5 +1,4 @@
 import os
-import numpy as np
 from AES_Python import AES
 
 aes_test = AES(running_mode="CBC",
